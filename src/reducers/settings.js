@@ -25,6 +25,10 @@ export const SETTINGS_VALIDATION_RULES = {
 
     machineAEnabled: 'boolean',
 
+    machineOrigin: 'in:TL,TR,BL,BR',
+    machineOriginInvertX: 'boolean',
+    machineOriginInvertY: 'boolean',
+
     toolGridWidth: 'numeric|min:100',
     toolGridHeight: 'numeric|min:100',
     toolImagePosition: 'in:TL,TR,C,BL,BR',
@@ -61,6 +65,9 @@ export const SETTINGS_INITIALSTATE = {
     machineWidth: 300,
     machineHeight: 200,
     machineBeamDiameter: 0.2,
+    machineOrigin: 'TL',
+    machineOriginInvertX: false,
+    machineOriginInvertY: false,
     machineBottomLeftX: 0,
     machineBottomLeftY: 0,
 

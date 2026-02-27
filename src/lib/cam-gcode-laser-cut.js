@@ -18,6 +18,7 @@
 import { dist, cut, fillPath, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve } from './cam';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
 import { getGenerator } from "./action2gcode/gcode-generator";
+import { getMachineOriginFromSettings } from './helpers';
 
 // Convert laser cut paths to gcode.
 //      paths:          Array of CamPath
@@ -33,7 +34,7 @@ import { getGenerator } from "./action2gcode/gcode-generator";
 //      gcodeToolOff:  Laser off (may be empty)
 //      gcodeSMaxValue: Max S value
 export function getLaserCutGcode(props) {
-    let { paths, generator, scale, offsetX, offsetY, decimal, cutFeed, laserPower, passes,
+    let { paths, generator, scale, offsetX = 0, offsetY = 0, originX = 0, originY = 0, xDir = 1, yDir = 1, decimal, cutFeed, laserPower, passes,
         useA, aAxisDiameter,
         tabGeometry, gcodeToolOn, gcodeToolOff,
         gcodeLaserIntensity, gcodeLaserIntensitySeparateLine, gcodeSMinValue, gcodeSMaxValue,
@@ -49,8 +50,8 @@ export function getLaserCutGcode(props) {
 
     let lastX = 0, lastY = 0, lastA = 0;
     function convertPoint(p, rapid) {
-        let x = p.X * scale + offsetX;
-        let y = p.Y * scale + offsetY;
+        let x = (p.X * scale - originX) * xDir;
+        let y = (p.Y * scale - originY) * yDir;
         if (useA) {
             let a = y * 360 / aAxisDiameter / Math.PI;
             let roundedX = Number(x.toFixed(decimal));
@@ -60,8 +61,17 @@ export function getLaserCutGcode(props) {
                 lastX = roundedX;
                 lastY = adjustedY;
                 lastA = roundedA;
+                let dx = roundedX - lastX, dy = adjustedY - lastY, da = roundedA - lastA;
+                let travelTime = Math.sqrt(dx * dx + dy * dy) / cutFeed;                
+                let f = 0;
+                if (dx)
+                    f = Math.abs(dx) / travelTime;
+                else if (da)
+                    f = Math.abs(da) / travelTime;
+                else
+                    return null;                
               //return 'G0 X' + x.toFixed(decimal) + ' A' + a.toFixed(decimal);
-              return {x: x.toFixed(decimal), a: a.toFixed(decimal)};
+              return {x: x.toFixed(decimal), a: a.toFixed(decimal), f: f.toFixed(decimal)};
             } else {
                 let dx = roundedX - lastX, dy = adjustedY - lastY, da = roundedA - lastA;
                 let travelTime = Math.sqrt(dx * dx + dy * dy) / cutFeed;
@@ -118,7 +128,7 @@ export function getLaserCutGcode(props) {
                     gcode += '; Skip tab\r\n';
                     continue;
                 }
-                gcode += generator.moveRapid(convertPoint(selectedPath[0], true)) + '\r\n';
+                gcode += generator.moveRapid(convertPoint(selectedPath[0], false)) + '\r\n';
 
                 if (useZ && !usedZposition) {
                     usedZposition = true;
@@ -242,13 +252,16 @@ export function getLaserCutGcodeFromOp(settings, opIndex, op, geometry, openGeom
     if (op.hookOperationStart.length) gcode += op.hookOperationStart;
 
     let generator = getGenerator(settings.gcodeGenerator, settings);
+    let { ox, oy, xDir, yDir } = getMachineOriginFromSettings(settings);
 
     gcode += getLaserCutGcode({
         generator: generator,
         paths: camPaths,
         scale: 1 / mmToClipperScale,
-        offsetX: 0,
-        offsetY: 0,
+        originX: ox,
+        originY: oy,
+        xDir: xDir,
+        yDir: yDir,
         decimal: 2,
         cutFeed: op.cutRate * feedScale,
         laserPower: op.laserPower,

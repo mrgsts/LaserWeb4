@@ -4,10 +4,17 @@ WORKDIR /app
 
 COPY . .
 
-RUN apk add --no-cache make gcc g++ python python3 linux-headers udev git
+RUN apk add --no-cache make gcc g++ python python3 linux-headers udev git eudev-dev libusb-dev pkgconf
 RUN git config --global url."https://github.com".insteadOf "ssh://git@github.com"
+RUN npm config set strict-ssl false
 RUN npm set progress=false && npm config set depth 0
-RUN npm ci
+RUN npm ci --unsafe-perm
+
+# Build without minification (UglifyJS doesn't support ES6+)
+RUN npx webpack --progress --colors
+
+# Override the comm-server's bundled frontend with ALL freshly built files
+RUN cp /app/dist/* /app/node_modules/lw.comm-server/app/
 
 #
 # ---- Release ----
@@ -15,6 +22,8 @@ FROM node:10-alpine
 
 ENV ENV="production"
 ENV NODE_ENV="production"
+
+RUN apk add --no-cache udev eudev
 
 WORKDIR /app
 COPY --from=base /app ./

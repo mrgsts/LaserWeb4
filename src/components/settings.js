@@ -226,10 +226,14 @@ class Settings extends React.Component {
                         <h5 className="header">Dimensions</h5>
                         <NumberField {...{ object: this.props.settings, field: 'machineWidth', setAttrs: setSettingsAttrs, description: 'Machine Width', units: 'mm' }} />
                         <NumberField {...{ object: this.props.settings, field: 'machineHeight', setAttrs: setSettingsAttrs, description: 'Machine Height', units: 'mm' }} />
-                        <h5 className="header">Origin offsets</h5>
+                        <h5 className="header">Origin</h5>
+                        <SelectField {...{ object: this.props.settings, field: 'machineOrigin', setAttrs: setSettingsAttrs, data: ['BL','TL','TR','BR'], defaultValue: 'TL', description: 'Machine Origin Corner', selectProps: { clearable: false } }} />
+                        <QuadrantField {... { object: this.props.settings, field: 'machineOrigin', setAttrs: setSettingsAttrs, description: '', available: ['TL','TR','BL','BR'] }} />
+                        <ToggleField {...{ object: this.props.settings, field: 'machineOriginInvertX', setAttrs: setSettingsAttrs, description: 'Invert X Axis' }} />
+                        <ToggleField {...{ object: this.props.settings, field: 'machineOriginInvertY', setAttrs: setSettingsAttrs, description: 'Invert Y Axis' }} />
                         <ToggleField {...{ object: this.props.settings, field: 'showMachine', setAttrs: setSettingsAttrs, description: 'Show Machine' }} />
-                        <NumberField {...{ object: this.props.settings, field: 'machineBottomLeftX', setAttrs: setSettingsAttrs, description: 'Machine Left X', units: 'mm' }} />
-                        <NumberField {...{ object: this.props.settings, field: 'machineBottomLeftY', setAttrs: setSettingsAttrs, description: 'Machine Bottom Y', units: 'mm' }} />
+                        <NumberField {...{ object: this.props.settings, field: 'machineBottomLeftX', setAttrs: setSettingsAttrs, description: 'Machine Origin X', units: 'mm' }} />
+                        <NumberField {...{ object: this.props.settings, field: 'machineBottomLeftY', setAttrs: setSettingsAttrs, description: 'Machine Origin Y', units: 'mm' }} />
                         <h5 className="header">Tool head</h5>
                         <NumberField {...{ object: this.props.settings, field: 'machineBeamDiameter', setAttrs: setSettingsAttrs, description: (<span>Beam <abbr title="Diameter">&Oslash;</abbr></span>), units: 'mm' }} />
                         <h5 className="header">Probe tool</h5>

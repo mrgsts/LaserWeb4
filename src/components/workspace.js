@@ -98,11 +98,63 @@ class LightenMachineBounds {
     }
 };
 
+/**
+ * Compute the WebGL position of the machine origin based on the machineOrigin setting.
+ * @param {string} origin - One of 'BL', 'TL', 'TR', 'BR'
+ * @param {number} machineX - Bottom-left X of machine bed in WebGL coords
+ * @param {number} machineY - Bottom-left Y of machine bed in WebGL coords
+ * @param {number} width - Machine width
+ * @param {number} height - Machine height
+ * @param {boolean} invertX - Invert X axis direction
+ * @param {boolean} invertY - Invert Y axis direction
+ * @returns {{ox, oy, xDir, yDir}}
+ */
+function getMachineOrigin(origin, machineX, machineY, width, height, invertX = false, invertY = false) {
+    let result;
+    switch (origin) {
+        case 'TL':
+            result = { ox: machineX, oy: machineY + height, xDir: 1, yDir: -1 };
+            break;
+        case 'TR':
+            result = { ox: machineX + width, oy: machineY + height, xDir: -1, yDir: -1 };
+            break;
+        case 'BR':
+            result = { ox: machineX + width, oy: machineY, xDir: -1, yDir: 1 };
+            break;
+        case 'BL':
+        default:
+            result = { ox: machineX, oy: machineY, xDir: 1, yDir: 1 };
+            break;
+    }
+    if (invertX) result.xDir *= -1;
+    if (invertY) result.yDir *= -1;
+    return result;
+}
+
+/**
+ * Convert machine coordinates (as reported by the controller) to WebGL coordinates.
+ * @param {number[]} machinePos - [x, y, z] in machine coordinates
+ * @param {number} ox - Origin X in WebGL coords
+ * @param {number} oy - Origin Y in WebGL coords
+ * @param {number} xDir - X direction multiplier (+1 or -1)
+ * @param {number} yDir - Y direction multiplier (+1 or -1)
+ * @returns {number[]} [x, y, z] in WebGL coordinates
+ */
+function machineToWebGL(machinePos, ox, oy, xDir, yDir) {
+    return [
+        ox + machinePos[0] * xDir,
+        oy + machinePos[1] * yDir,
+        machinePos[2] || 0
+    ];
+}
+
 class Grid {
-    draw(drawCommands, { perspective, view, width, height, major = MAJOR_GRID_SPACING, minor = MINOR_GRID_SPACING }) {
-        if (!this.maingrid || !this.origin || this.width !== width || this.height !== height) {
+    draw(drawCommands, { perspective, view, width, height, major = MAJOR_GRID_SPACING, minor = MINOR_GRID_SPACING, originX = 0, originY = 0 }) {
+        if (!this.maingrid || !this.origin || this.width !== width || this.height !== height || this.originX !== originX || this.originY !== originY) {
             this.width = width;
             this.height = height;
+            this.originX = originX;
+            this.originY = originY;
             let a = [];
             let b = [];
             a.push(-this.width, -this.height, 0, this.width, -this.height, 0);
@@ -131,8 +183,8 @@ class Grid {
             this.darkcount = b.length / 3;
 
             let c = [];
-            c.push(-this.width, 0, 0, this.width, 0, 0);
-            c.push(0, -this.height, 0, 0, this.height, 0);
+            c.push(-this.width + originX, originY, 0, this.width + originX, originY, 0);
+            c.push(originX, -this.height + originY, 0, originX, this.height + originY, 0);
             this.origin = new Float32Array(c)
             this.origincount = c.length / 3
         }
@@ -140,25 +192,33 @@ class Grid {
         drawCommands.basic({ perspective, view, position: this.maingrid, offset: 0, count: this.maincount, color: [0.7, 0.7, 0.7, 0.95], scale: [1, 1, 1], translate: [0, 0, 0], primitive: drawCommands.gl.LINES }); // Gray grid
         drawCommands.basic({ perspective, view, position: this.darkgrid, offset: 0, count: this.darkcount, color: [0.5, 0.5, 0.5, 0.95], scale: [1, 1, 1], translate: [0, 0, 0], primitive: drawCommands.gl.LINES }); // dark grid
 
-        drawCommands.basic({ perspective, view, position: this.origin, offset: 0, count: 2, color: [0.6, 0, 0, 1], scale: [1, 1, 1], translate: [0, 0, 0], primitive: drawCommands.gl.LINES }); // Red
-        drawCommands.basic({ perspective, view, position: this.origin, offset: 2, count: 2, color: [0, 0.8, 0, 1], scale: [1, 1, 1], translate: [0, 0, 0], primitive: drawCommands.gl.LINES }); // Green
+        drawCommands.basic({ perspective, view, position: this.origin, offset: 0, count: 2, color: [0.6, 0, 0, 1], scale: [1, 1, 1], translate: [0, 0, 0], primitive: drawCommands.gl.LINES }); // Red X-axis
+        drawCommands.basic({ perspective, view, position: this.origin, offset: 2, count: 2, color: [0, 0.8, 0, 1], scale: [1, 1, 1], translate: [0, 0, 0], primitive: drawCommands.gl.LINES }); // Green Y-axis
     }
 };
 
 function GridText(props) {
-    let { minor = MINOR_GRID_SPACING, major = MAJOR_GRID_SPACING, width, height } = props;
+    let { minor = MINOR_GRID_SPACING, major = MAJOR_GRID_SPACING, width, height, originX = 0, originY = 0, xDir = 1, yDir = 1 } = props;
     let size = Math.min(major / 3, 10)
     let a = [];
     for (let x = major; x <= width; x += major) {
-        a.push(<Text3d key={'x' + x} x={x} y={-5} size={size} style={{ color: '#CC0000' }} label={String(x)} />);
-        a.push(<Text3d key={'x' + -x} x={-x} y={-5} size={size} style={{ color: '#CC0000' }} label={String(-x)} />);
+        let labelPos = x;
+        let labelNeg = -x;
+        let dispPos = Math.round((x - originX) * xDir);
+        let dispNeg = Math.round((-x - originX) * xDir);
+        a.push(<Text3d key={'x' + x} x={labelPos} y={originY - 5 * (yDir > 0 ? 1 : -1)} size={size} style={{ color: '#CC0000' }} label={String(dispPos)} />);
+        a.push(<Text3d key={'x' + -x} x={labelNeg} y={originY - 5 * (yDir > 0 ? 1 : -1)} size={size} style={{ color: '#CC0000' }} label={String(dispNeg)} />);
     }
-    a.push(<Text3d key="x-label" x={width + 15} y={0} size={size} style={{ color: '#CC0000' }}>X</Text3d>);
+    a.push(<Text3d key="x-label" x={width + 15} y={originY} size={size} style={{ color: '#CC0000' }}>X</Text3d>);
     for (let y = major; y <= height; y += major) {
-        a.push(<Text3d key={'y' + y} x={-10} y={y} size={size} style={{ color: '#00CC00' }} label={String(y)} />);
-        a.push(<Text3d key={'y' + -y} x={-10} y={-y} size={size} style={{ color: '#00CC00' }} label={String(-y)} />);
+        let labelPos = y;
+        let labelNeg = -y;
+        let dispPos = Math.round((y - originY) * yDir);
+        let dispNeg = Math.round((-y - originY) * yDir);
+        a.push(<Text3d key={'y' + y} x={originX - 10 * (xDir > 0 ? 1 : -1)} y={labelPos} size={size} style={{ color: '#00CC00' }} label={String(dispPos)} />);
+        a.push(<Text3d key={'y' + -y} x={originX - 10 * (xDir > 0 ? 1 : -1)} y={labelNeg} size={size} style={{ color: '#00CC00' }} label={String(dispNeg)} />);
     }
-    a.push(<Text3d key="y-label" x={0} y={height + 15} size={size} style={{ color: '#00CC00' }}>Y</Text3d>);
+    a.push(<Text3d key="y-label" x={originX} y={height + 15} size={size} style={{ color: '#00CC00' }}>Y</Text3d>);
     return <div>{a}</div>;
 }
 
@@ -166,12 +226,13 @@ const markerOrthSize = 10;
 const markerPointSize = 6;
 
 class MachineBounds {
-    draw(drawCommands, { perspective, view, x, y, width, height }) {
-        if (!this.markers || this.x !== x || this.y !== y || this.width !== width || this.height !== height) {
+    draw(drawCommands, { perspective, view, x, y, width, height, origin = 'BL' }) {
+        if (!this.markers || this.x !== x || this.y !== y || this.width !== width || this.height !== height || this.origin !== origin) {
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
+            this.origin = origin;
             let x2 = x + width;
             let y2 = y + height;
             let a = [
@@ -185,9 +246,39 @@ class MachineBounds {
                 x, y2, x - markerPointSize, y2 + markerPointSize, x, y2 - markerOrthSize,
             ];
             this.markers = new Float32Array(a);
+
+            // Origin indicator: a larger filled triangle at the origin corner
+            let oSize = markerOrthSize * 1.8;
+            let ox, oy, oa;
+            switch (origin) {
+                case 'TL':
+                    ox = x; oy = y2;
+                    oa = [ox, oy, ox + oSize, oy, ox, oy - oSize,
+                          ox, oy, ox + oSize, oy, ox + oSize * 0.5, oy - oSize * 0.5];
+                    break;
+                case 'TR':
+                    ox = x2; oy = y2;
+                    oa = [ox, oy, ox - oSize, oy, ox, oy - oSize,
+                          ox, oy, ox - oSize, oy, ox - oSize * 0.5, oy - oSize * 0.5];
+                    break;
+                case 'BR':
+                    ox = x2; oy = y;
+                    oa = [ox, oy, ox - oSize, oy, ox, oy + oSize,
+                          ox, oy, ox - oSize, oy, ox - oSize * 0.5, oy + oSize * 0.5];
+                    break;
+                case 'BL':
+                default:
+                    ox = x; oy = y;
+                    oa = [ox, oy, ox + oSize, oy, ox, oy + oSize,
+                          ox, oy, ox + oSize, oy, ox + oSize * 0.5, oy + oSize * 0.5];
+                    break;
+            }
+            this.originMarker = new Float32Array(oa);
         }
 
         drawCommands.basic2d({ perspective, view, position: this.markers, offset: 0, count: this.markers.length / 2, color: [0, 0, 0, 0.8], transform2d: [1, 0, 0, 1, 0, 0], primitive: drawCommands.gl.TRIANGLES });
+        // Draw origin corner marker in green
+        drawCommands.basic2d({ perspective, view, position: this.originMarker, offset: 0, count: this.originMarker.length / 2, color: [0, 0.7, 0, 0.9], transform2d: [1, 0, 0, 1, 0, 0], primitive: drawCommands.gl.TRIANGLES });
     }
 };
 
@@ -204,6 +295,14 @@ class FloatingControls extends React.Component {
             drag: this.props.settings.uiFcDrag
         }
     }
+
+    _getOrigin() {
+        let s = this.props.settings;
+        let machineX = s.machineBottomLeftX;
+        let machineY = s.machineBottomLeftY;
+        return getMachineOrigin(s.machineOrigin, machineX, machineY, s.machineWidth, s.machineHeight, s.machineOriginInvertX, s.machineOriginInvertY);
+    }
+
     componentWillMount() {
 
         this.linkScaleChanged = e => {
@@ -264,7 +363,8 @@ class FloatingControls extends React.Component {
             this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, v - this.bounds.x2, 0]));
         }
         this.setZeroX = dir => {
-            var x = -this.bounds.x1;
+            let { ox } = this._getOrigin();
+            var x = ox - this.bounds.x1;
             if (dir)
                 x -= this.bounds.x2 - this.bounds.x1;
             this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, x, 0]));
@@ -288,7 +388,8 @@ class FloatingControls extends React.Component {
             this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, v - this.bounds.y2]));
         }
         this.setZeroY = dir => {
-            var y = -this.bounds.y1;
+            let { oy } = this._getOrigin();
+            var y = oy - this.bounds.y1;
             if (dir)
                 y -= this.bounds.y2 - this.bounds.y1;
             this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, 0, y]));
@@ -303,8 +404,9 @@ class FloatingControls extends React.Component {
             }
         }
         this.setCenterXY = v => {
-            let x = -this.bounds.x1;
-            let y = -this.bounds.y1;
+            let { ox, oy } = this._getOrigin();
+            let x = ox - this.bounds.x1;
+            let y = oy - this.bounds.y1;
             let cx = (this.bounds.x2 - this.bounds.x1) / 2;
             let cy = (this.bounds.y2 - this.bounds.y1) / 2;
             this.props.dispatch(transform2dSelectedDocuments([1, 0, 0, 1, x - cx, y - cy]));
@@ -785,6 +887,14 @@ class WorkspaceContent extends React.Component {
     drawFlat(canvas, gl) {
         let machineX = this.props.settings.machineBottomLeftX - this.props.workspace.workOffsetX;
         let machineY = this.props.settings.machineBottomLeftY - this.props.workspace.workOffsetY;
+        let { ox, oy, xDir, yDir } = getMachineOrigin(
+            this.props.settings.machineOrigin,
+            machineX, machineY,
+            this.props.settings.machineWidth,
+            this.props.settings.machineHeight,
+            this.props.settings.machineOriginInvertX,
+            this.props.settings.machineOriginInvertY
+        );
 
         if (this.props.settings.showMachine) {
             gl.clearDepth(1);
@@ -799,10 +909,12 @@ class WorkspaceContent extends React.Component {
             width: this.props.settings.toolGridWidth, height: this.props.settings.toolGridHeight,
             minor: Math.max(this.props.settings.toolGridMinorSpacing,0.1),
             major: Math.max(this.props.settings.toolGridMajorSpacing,1),
+            originX: ox, originY: oy,
         });
         if (this.props.settings.showMachine)
             this.machineBounds.draw(this.drawCommands, {
                 perspective: this.camera.perspective, view: this.camera.view, x: machineX, y: machineY, width: this.props.settings.machineWidth, height: this.props.settings.machineHeight,
+                origin: this.props.settings.machineOrigin,
             });
         if (this.props.workspace.showDocuments)
             cacheDrawing(drawDocuments, this.drawDocsState, {
@@ -847,13 +959,28 @@ class WorkspaceContent extends React.Component {
                 documentCacheHolder: this.props.documentCacheHolder,
                 numImagesLoaded: this.props.documentCacheHolder.numImagesLoaded,
             });
-        if (this.props.workspace.showCursor)
-            drawCursor(this.camera.perspective, this.camera.view, this.drawCommands, this.props.workspace.cursorPos);
+        if (this.props.workspace.showCursor) {
+            let mPos = [
+                this.props.workspace.cursorPos[0] + (this.props.workspace.workOffsetX || 0),
+                this.props.workspace.cursorPos[1] + (this.props.workspace.workOffsetY || 0),
+                this.props.workspace.cursorPos[2]
+            ];
+            let webglCursorPos = machineToWebGL(mPos, ox, oy, xDir, yDir);
+            drawCursor(this.camera.perspective, this.camera.view, this.drawCommands, webglCursorPos);
+        }
     } // drawFlat()
 
     drawRotary(canvas, gl) {
         let machineX = this.props.settings.machineBottomLeftX - this.props.workspace.workOffsetX;
         let machineY = this.props.settings.machineBottomLeftY - this.props.workspace.workOffsetY;
+        let { ox: rox, oy: roy, xDir: rxDir, yDir: ryDir } = getMachineOrigin(
+            this.props.settings.machineOrigin,
+            machineX, machineY,
+            this.props.settings.machineWidth,
+            this.props.settings.machineHeight,
+            this.props.settings.machineOriginInvertX,
+            this.props.settings.machineOriginInvertY
+        );
 
         let minX = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE;
@@ -937,10 +1064,12 @@ class WorkspaceContent extends React.Component {
             width: this.props.settings.toolGridWidth, height: this.props.settings.toolGridHeight,
             minor: Math.max(this.props.settings.toolGridMinorSpacing,0.1),
             major: Math.max(this.props.settings.toolGridMajorSpacing,1),
+            originX: rox, originY: roy,
         });
         if (this.props.settings.showMachine)
             this.machineBounds.draw(this.drawCommands, {
                 perspective: this.camera.perspective, view: this.camera.view, x: machineX, y: machineY, width: this.props.settings.machineWidth, height: this.props.settings.machineHeight,
+                origin: this.props.settings.machineOrigin,
             });
 
         if (this.props.workspace.rotaryDiameter > 0) {
@@ -950,8 +1079,15 @@ class WorkspaceContent extends React.Component {
             gl.disable(gl.DEPTH_TEST);
         }
 
-        if (this.props.workspace.showCursor)
-            drawCursor(this.camera.perspective, this.camera.view, this.drawCommands, this.props.workspace.cursorPos);
+        if (this.props.workspace.showCursor) {
+            let mPos = [
+                this.props.workspace.cursorPos[0] + (this.props.workspace.workOffsetX || 0),
+                this.props.workspace.cursorPos[1] + (this.props.workspace.workOffsetY || 0),
+                this.props.workspace.cursorPos[2]
+            ];
+            let webglCursorPos = machineToWebGL(mPos, rox, roy, rxDir, ryDir);
+            drawCursor(this.camera.perspective, this.camera.view, this.drawCommands, webglCursorPos);
+        }
     }
 
     componentDidUpdate() {
@@ -1073,11 +1209,20 @@ class WorkspaceContent extends React.Component {
         this.jogMode = this.props.mode == 'jog';
 
         if (LiveJogging.isEnabled() && this.liveJoggingKey && this.jogMode) {
-            let [jogX, jogY] = this.xyInterceptFromPoint(e.pageX, e.pageY);
+            let [webGLX, webGLY] = this.xyInterceptFromPoint(e.pageX, e.pageY);
             let machineX = this.props.settings.machineBottomLeftX - this.props.workspace.workOffsetX;
             let machineY = this.props.settings.machineBottomLeftY - this.props.workspace.workOffsetY;
-            jogX = Math.floor(clamp(jogX, machineX, this.props.settings.machineWidth - this.props.workspace.workOffsetX))
-            jogY = Math.floor(clamp(jogY, machineY, this.props.settings.machineHeight - this.props.workspace.workOffsetY))
+            let { ox, oy, xDir, yDir } = getMachineOrigin(
+                this.props.settings.machineOrigin,
+                machineX, machineY,
+                this.props.settings.machineWidth,
+                this.props.settings.machineHeight,
+                this.props.settings.machineOriginInvertX,
+                this.props.settings.machineOriginInvertY
+            );
+            // Convert WebGL click position back to machine coordinates
+            let jogX = Math.floor(clamp((webGLX - ox) / xDir, 0, this.props.settings.machineWidth));
+            let jogY = Math.floor(clamp((webGLY - oy) / yDir, 0, this.props.settings.machineHeight));
             let jogF = this.props.settings.jogFeedXY * ((this.props.settings.toolFeedUnits === 'mm/min') ? 1 : 60);
             CommandHistory.warn(`Live Jogging X${jogX} Y${jogY} F${jogF}`)
             return jogTo(jogX, jogY, undefined, 0, jogF)
@@ -1236,6 +1381,9 @@ class WorkspaceContent extends React.Component {
             nextProps.settings.machineBottomLeftX !== this.props.settings.machineBottomLeftX || nextProps.settings.machineBottomLeftY !== this.props.settings.machineBottomLeftY ||
             nextProps.settings.toolGridWidth !== this.props.settings.toolGridWidth || nextProps.settings.toolGridHeight !== this.props.settings.toolGridHeight ||
             nextProps.workspace.workOffsetX !== this.props.workspace.workOffsetX || nextProps.workspace.workOffsetY !== this.props.workspace.workOffsetY ||
+            nextProps.settings.machineOrigin !== this.props.settings.machineOrigin ||
+            nextProps.settings.machineOriginInvertX !== this.props.settings.machineOriginInvertX ||
+            nextProps.settings.machineOriginInvertY !== this.props.settings.machineOriginInvertY ||
             nextProps.documents !== this.props.documents ||
             nextProps.camera !== this.props.camera ||
             nextProps.mode !== this.props.mode ||
@@ -1261,7 +1409,25 @@ class WorkspaceContent extends React.Component {
                             ref={this.setCanvas} />
                     </div>
                     <Dom3d className="workspace-content workspace-overlay" camera={this.camera} width={this.props.width} height={this.props.height} settings={this.props.settings}>
-                        <GridText {...{ width: this.props.settings.toolGridWidth, height: this.props.settings.toolGridHeight, minor: this.props.settings.toolGridMinorSpacing, major: this.props.settings.toolGridMajorSpacing }} />
+                        <GridText {...{
+                            width: this.props.settings.toolGridWidth,
+                            height: this.props.settings.toolGridHeight,
+                            minor: this.props.settings.toolGridMinorSpacing,
+                            major: this.props.settings.toolGridMajorSpacing,
+                            ...(() => {
+                                let machineX = this.props.settings.machineBottomLeftX - (this.props.workspace ? this.props.workspace.workOffsetX : 0);
+                                let machineY = this.props.settings.machineBottomLeftY - (this.props.workspace ? this.props.workspace.workOffsetY : 0);
+                                let { ox, oy, xDir, yDir } = getMachineOrigin(
+                                    this.props.settings.machineOrigin,
+                                    machineX, machineY,
+                                    this.props.settings.machineWidth,
+                                    this.props.settings.machineHeight,
+                                    this.props.settings.machineOriginInvertX,
+                                    this.props.settings.machineOriginInvertY
+                                );
+                                return { originX: ox, originY: oy, xDir, yDir };
+                            })()
+                        }} />
                     </Dom3d>
                 </Pointable>
 

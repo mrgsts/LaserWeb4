@@ -17,6 +17,7 @@
 
 import { dist, cut, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve } from './cam';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
+import { getMachineOriginFromSettings } from './helpers';
 
 // Convert mill paths to gcode.
 //      paths:          Array of CamPath
@@ -35,7 +36,7 @@ import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh'
 //      tabGeometry:    Tab geometry (optional)
 //      tabZ:           Z position over tabs (required if tabGeometry is not empty) (gcode units)
 export function getMillGcode(props) {
-    let { paths, ramp, scale, useZ, offsetX, offsetY, decimal, topZ, botZ, safeZ, passDepth,
+    let { paths, ramp, scale, useZ, offsetX = 0, offsetY = 0, originX = 0, originY = 0, xDir = 1, yDir = 1, decimal, topZ, botZ, safeZ, passDepth,
         plungeFeed, cutFeed, tabGeometry, tabZ, toolSpeed } = props;
 
     let plungeFeedGcode = ' F' + plungeFeed;
@@ -60,15 +61,15 @@ export function getMillGcode(props) {
     let gcode = retractGcode;
 
     function getX(p) {
-        return p.X * scale + offsetX;
+        return (p.X * scale - originX) * xDir;
     }
 
     function getY(p) {
-        return p.Y * scale + offsetY;
+        return (p.Y * scale - originY) * yDir;
     }
 
     function convertPoint(p, useZ) {
-        let result = ' X' + (p.X * scale + offsetX).toFixed(decimal) + ' Y' + (p.Y * scale + offsetY).toFixed(decimal);
+        let result = ' X' + ((p.X * scale - originX) * xDir).toFixed(decimal) + ' Y' + ((p.Y * scale - originY) * yDir).toFixed(decimal);
         if (useZ)
             result += ' Z' + (p.Z * scale + topZ).toFixed(decimal);
         return result;
@@ -274,13 +275,16 @@ export function getMillGcodeFromOp(settings, opIndex, op, geometry, openGeometry
 
     if (op.hookOperationStart.length) gcode += op.hookOperationStart;
 
+    let { ox, oy, xDir, yDir } = getMachineOriginFromSettings(settings);
     gcode += getMillGcode({
         paths: camPaths,
         ramp: op.ramp,
         scale: 1 / mmToClipperScale,
         useZ: op.type === 'Mill V Carve',
-        offsetX: 0,
-        offsetY: 0,
+        originX: ox,
+        originY: oy,
+        xDir: xDir,
+        yDir: yDir,
         decimal: 3,
         topZ: op.millStartZ,
         botZ: op.millEndZ,
