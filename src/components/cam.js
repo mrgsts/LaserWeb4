@@ -31,6 +31,7 @@ import { OperationDiagram } from './operation-diagram';
 import Splitter from './splitter';
 import { getGcode } from '../lib/cam-gcode';
 import { sendAsFile, appendExt, openDataWindow, captureConsole } from '../lib/helpers';
+import { uploadGcodeToSD } from '../lib/fluidnc-http';
 import { ValidateSettings } from '../reducers/settings';
 import { ApplicationSnapshotToolbar } from './settings';
 
@@ -212,6 +213,7 @@ class Cam extends React.Component {
                                                 <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
                                             </FileField>
                                         </ButtonGroup>
+                                        <button title="Upload G-Code to FluidNC SD" className="btn btn-default btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.uploadGcodeFluidNC}><i className="fa fa-cloud-upload" /></button>
                                         <button title="Clear" className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
                                     </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode(e)} />}</td>
                             </tr>
@@ -229,6 +231,25 @@ Cam = connect(
         settings: state.settings, documents: state.documents, operations: state.operations, currentOperation: state.currentOperation, gcode: state.gcode.content, gcoding: state.gcode.gcoding, dirty: state.gcode.dirty, panes: state.panes,
         saveGcode: (e) => { prompt('Save as', 'gcode.gcode', (file) => { if (file !== null) sendAsFile(appendExt(file, '.gcode'), state.gcode.content) }, !e.shiftKey) },
         viewGcode: () => openDataWindow(state.gcode.content),
+        uploadGcodeFluidNC: () => {
+            let ip = state.settings.connectIP;
+            let httpPort = state.settings.connectHTTPPort || '80';
+            let host = ip && !ip.match(/:\d+$/) ? ip + ':' + httpPort : ip;
+            let gcode = state.gcode.content;
+            if (!ip) { CommandHistory.error('No FluidNC IP configured. Set it in Comms > Machine Connection.'); return; }
+            if (!gcode || gcode.length === 0) { CommandHistory.error('No G-Code to upload. Generate G-Code first.'); return; }
+            prompt('Upload GCode to FluidNC SD as', 'job.gcode', (filename) => {
+                if (!filename) return;
+                if (!filename.match(/\.(nc|gc|gcode)$/i)) filename += '.gcode';
+                uploadGcodeToSD(host, filename, gcode, (progress) => {
+                    CommandHistory.write('Upload progress: ' + progress + '%', CommandHistory.INFO);
+                }).then(() => {
+                    CommandHistory.write('GCode uploaded to FluidNC SD: ' + filename, CommandHistory.SUCCESS);
+                }).catch(err => {
+                    CommandHistory.error('Upload failed: ' + err.message);
+                });
+            });
+        },
     }),
     dispatch => ({
         dispatch,

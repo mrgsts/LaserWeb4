@@ -31,6 +31,7 @@ import Cam from './cam'
 import Quote from './quote'
 import Settings from './settings'
 import About from './about'
+import FluidNCFiles from './fluidnc-files'
 
 import { AllowCapture } from './capture'
 import { DocumentCacheHolder } from './document-cache'
@@ -186,6 +187,7 @@ class LaserWeb extends React.Component {
                             <Cam id="cam" title="Files" icon="pencil-square-o" />
                             <Com id="com" title="Comms" icon="plug" />
                             <Jog id="jog" title="Control" icon="arrows-alt" />
+                            <FluidNCFiles id="fluidnc" title="FluidNC" icon="hdd-o" />
                             <Settings id="settings" title="Settings" icon="cogs" />
                             <About id="about" title="About" icon="question" />
                         </Sidebar>

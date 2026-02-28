@@ -15,9 +15,14 @@ import { alert, prompt, confirm} from './laserweb';
 import Icon from './font-awesome';
 
 import io from 'socket.io-client';
+import { FluidNCWebSocket } from '../lib/fluidnc-ws';
 var socket, connectVia;
 var serverConnected = false;
 var machineConnected = false;
+var fluidncWS = null;
+var fluidncJobLines = [];
+var fluidncJobIndex = 0;
+var fluidncJobRunning = false;
 var jobStartTime = -1;
 var accumulatedJobTime = 0;
 var playing = false;
@@ -42,6 +47,14 @@ class Com extends React.Component {
         let {comInterfaces, comPorts, comAccumulatedJobTime} = this.props.settings;
         accumulatedJobTime = comAccumulatedJobTime;
         this.state = {comInterfaces: comInterfaces, comPorts: comPorts};
+    }
+
+    getComInterfacesWithFluidNC() {
+        let interfaces = this.state.comInterfaces.slice();
+        if (interfaces.indexOf('FluidNC-WS') === -1) {
+            interfaces.push('FluidNC-WS');
+        }
+        return interfaces;
     }
 
     componentDidMount() {
@@ -458,6 +471,168 @@ class Com extends React.Component {
         }
     }
 
+    handleConnectFluidNC() {
+        let {settings, dispatch} = this.props;
+        let connectIP = settings.connectIP;
+        let connectWSPort = settings.connectWSPort || '81';
+        if (!connectIP) {
+            CommandHistory.write('Could not connect! -> please enter IP address', CommandHistory.DANGER);
+            return;
+        }
+
+        // Disconnect previous FluidNC-WS connection if any
+        if (fluidncWS) {
+            fluidncWS.disconnect();
+            fluidncWS = null;
+        }
+
+        fluidncWS = new FluidNCWebSocket({
+            onConnect: () => {
+                machineConnected = true;
+                serverConnected = true; // We treat WS as both server+machine
+                connectVia = 'FluidNC-WS';
+                $('#connectS').addClass('disabled');
+                $('#disconnectS').removeClass('disabled');
+                $('#connect').addClass('disabled');
+                $('#disconnect').removeClass('disabled');
+                dispatch(setComAttrs({ serverConnected: true, machineConnected: true }));
+            },
+            onDisconnect: () => {
+                machineConnected = false;
+                serverConnected = false;
+                fluidncJobRunning = false;
+                fluidncJobLines = [];
+                fluidncJobIndex = 0;
+                $('#connectS').removeClass('disabled');
+                $('#disconnectS').addClass('disabled');
+                $('#connect').removeClass('disabled');
+                $('#disconnect').addClass('disabled');
+                dispatch(setComAttrs({ serverConnected: false, machineConnected: false }));
+            },
+            onFirmware: (info) => {
+                firmware = info.firmware;
+                fVersion = info.version;
+                fDate = info.date;
+                dispatch(setComAttrs({ firmware: firmware, firmwareVersion: fVersion && fVersion.toString() }));
+                CommandHistory.write('Firmware ' + firmware + ' ' + fVersion + ' detected', CommandHistory.SUCCESS);
+            },
+            onStatusReport: (report) => {
+                updateStatus(report);
+            },
+            onWPos: (wpos) => {
+                let {x, y, z, a} = wpos;
+                let posChanged = false;
+                if (xpos !== x) { xpos = x; posChanged = true; }
+                if (ypos !== y) { ypos = y; posChanged = true; }
+                if (zpos !== z) { zpos = z; posChanged = true; }
+                if (apos !== a) { apos = a; posChanged = true; }
+                if (posChanged) {
+                    $('#mX').html(xpos);
+                    $('#mY').html(ypos);
+                    $('#mZ').html(zpos);
+                    $('#mA').html(apos);
+                    dispatch(setWorkspaceAttrs({ cursorPos: [xpos, ypos, zpos] }));
+                }
+            },
+            onWOffset: (wOffset) => {
+                let {x, y, z, a} = wOffset;
+                x = Number(x); y = Number(y); z = Number(z); a = Number(a);
+                let posChanged = false;
+                if ((xOffset !== x) && !isNaN(x)) { xOffset = x; posChanged = true; }
+                if ((yOffset !== y) && !isNaN(y)) { yOffset = y; posChanged = true; }
+                if ((zOffset !== z) && !isNaN(z)) { zOffset = z; posChanged = true; }
+                if ((aOffset !== a) && !isNaN(a)) { aOffset = a; posChanged = true; }
+                if (posChanged) {
+                    CommandHistory.write('Work Offset: ' + xOffset + ' / ' + yOffset + ' / ' + zOffset + ' / ' + aOffset);
+                    dispatch(setWorkspaceAttrs({ workOffsetX: +xOffset, workOffsetY: +yOffset }));
+                }
+            },
+            onOk: () => {
+                // If a job is running, send the next line
+                if (fluidncJobRunning && fluidncJobIndex < fluidncJobLines.length) {
+                    fluidncSendNextJobLine();
+                } else if (fluidncJobRunning && fluidncJobIndex >= fluidncJobLines.length) {
+                    // Job complete
+                    fluidncJobRunning = false;
+                    playing = false;
+                    paused = false;
+                    runStatus('finished');
+                    $('#playicon').removeClass('fa-pause');
+                    $('#playicon').addClass('fa-play');
+                    if (jobStartTime >= 0) {
+                        var jobFinishTime = new Date(Date.now());
+                        var elapsedTimeMS = jobFinishTime.getTime() - jobStartTime.getTime();
+                        var elapsedTime = Math.round(elapsedTimeMS / 1000);
+                        CommandHistory.write('Job started at ' + jobStartTime.toString(), CommandHistory.SUCCESS);
+                        CommandHistory.write('Job finished at ' + jobFinishTime.toString(), CommandHistory.SUCCESS);
+                        CommandHistory.write('Elapsed time: ' + secToHMS(elapsedTime), CommandHistory.SUCCESS);
+                        jobStartTime = -1;
+                        accumulatedJobTime += elapsedTime;
+                        let AJT = accumulatedJobTime;
+                        dispatch(setSettingsAttrs({comAccumulatedJobTime: AJT}));
+                        CommandHistory.write('Total accumulated job time: ' + secToHMS(AJT), CommandHistory.SUCCESS);
+                    }
+                }
+            },
+            onError: (errMsg) => {
+                CommandHistory.error(errMsg);
+                if (fluidncJobRunning) {
+                    // Stop job on error
+                    fluidncJobRunning = false;
+                    playing = false;
+                    paused = false;
+                    runStatus('stopped');
+                    $('#playicon').removeClass('fa-pause');
+                    $('#playicon').addClass('fa-play');
+                    CommandHistory.error('Job stopped due to error');
+                }
+            },
+            onAlarm: (alarmMsg) => {
+                CommandHistory.error(alarmMsg);
+                runStatus('alarm');
+                fluidncJobRunning = false;
+                playing = false;
+                paused = false;
+            },
+            onData: (line) => {
+                if (line) {
+                    var style = CommandHistory.STD;
+                    if (line.indexOf('[MSG:') === 0) {
+                        style = CommandHistory.WARN;
+                    } else if (line.indexOf('ALARM:') === 0) {
+                        style = CommandHistory.DANGER;
+                    } else if (line.indexOf('error:') === 0) {
+                        style = CommandHistory.DANGER;
+                    }
+                    CommandHistory.write(line, style);
+                }
+            },
+            onQCount: (count) => {
+                $('#queueCnt').html('Queued: ' + count);
+            }
+        });
+
+        CommandHistory.write('Connecting Machine @ FluidNC-WS,' + connectIP + ':' + connectWSPort, CommandHistory.INFO);
+        fluidncWS.connect(connectIP, parseInt(connectWSPort));
+    }
+
+    handleDisconnectFluidNC() {
+        if (fluidncWS) {
+            fluidncJobRunning = false;
+            fluidncJobLines = [];
+            fluidncJobIndex = 0;
+            fluidncWS.disconnect();
+            fluidncWS = null;
+            machineConnected = false;
+            serverConnected = false;
+            $('#connectS').removeClass('disabled');
+            $('#disconnectS').addClass('disabled');
+            $('#connect').removeClass('disabled');
+            $('#disconnect').addClass('disabled');
+            CommandHistory.write('FluidNC-WS Disconnected', CommandHistory.INFO);
+        }
+    }
+
     handleConnectMachine() {
         var connectVia = this.props.settings.connectVia;
         var connectPort = this.props.settings.connectPort.trim();
@@ -492,12 +667,20 @@ class Com extends React.Component {
                 CommandHistory.write('Connecting Machine @ ' + connectVia + ',' + connectIP, CommandHistory.INFO);
                 socket.emit('connectTo', connectVia + ',' + connectIP);
                 break;
+            case 'FluidNC-WS':
+                this.handleConnectFluidNC();
+                break;
         }
     }
 
     handleDisconnectMachine() {
-        CommandHistory.write('Disconnecting Machine', CommandHistory.INFO);
-        socket.emit('closePort');
+        var cv = this.props.settings.connectVia;
+        if (cv === 'FluidNC-WS') {
+            this.handleDisconnectFluidNC();
+        } else {
+            CommandHistory.write('Disconnecting Machine', CommandHistory.INFO);
+            socket.emit('closePort');
+        }
     }
 
 
@@ -519,16 +702,22 @@ class Com extends React.Component {
                     </Panel>
 
                     <Panel collapsible header="Machine Connection" bsStyle="primary" eventKey="2" defaultExpanded={true}>
-                        <SelectField {...{ object: settings, field: 'connectVia', setAttrs: setSettingsAttrs, data: this.state.comInterfaces, defaultValue: '', description: 'Machine Connection', selectProps: { clearable: false } }} />
+                        <SelectField {...{ object: settings, field: 'connectVia', setAttrs: setSettingsAttrs, data: this.getComInterfacesWithFluidNC(), defaultValue: '', description: 'Machine Connection', selectProps: { clearable: false } }} />
                         <Collapse in={settings.connectVia == 'USB'}>
                             <div>
                                 <SelectField {...{ object: settings, field: 'connectPort', setAttrs: setSettingsAttrs, data: formatPorts(this.state.comPorts), defaultValue: '', description: 'USB / Serial Port', selectProps: { clearable: false } }} />
                                 <SelectField {...{ object: settings, field: 'connectBaud', setAttrs: setSettingsAttrs, data: ['250000', '230400', '115200', '57600', '38400', '19200', '9600'], defaultValue: '115200', description: 'Baudrate', selectProps: { clearable: false } }} />
                             </div>
                         </Collapse>
-                        <Collapse in={settings.connectVia != 'USB'}>
+                        <Collapse in={settings.connectVia != 'USB' && settings.connectVia != ''}>
                             <div>
                                 <TextField {...{ object: settings, field: 'connectIP', setAttrs: setSettingsAttrs, description: 'Machine IP' }} />
+                            </div>
+                        </Collapse>
+                        <Collapse in={settings.connectVia == 'FluidNC-WS'}>
+                            <div>
+                                <TextField {...{ object: settings, field: 'connectHTTPPort', setAttrs: setSettingsAttrs, description: 'HTTP Port (default: 80)' }} />
+                                <TextField {...{ object: settings, field: 'connectWSPort', setAttrs: setSettingsAttrs, description: 'WebSocket Port (default: 81)' }} />
                             </div>
                         </Collapse>
                         <ButtonGroup>
@@ -554,6 +743,39 @@ function secToHMS(sec) {
         seconds = '0' + seconds;
     }
     return hours + ':' + minutes + ':' + seconds;
+}
+
+/**
+ * Send the next line of a FluidNC-WS job.
+ * Called after receiving 'ok' from the controller.
+ */
+function fluidncSendNextJobLine() {
+    while (fluidncJobIndex < fluidncJobLines.length) {
+        let line = fluidncJobLines[fluidncJobIndex].trim();
+        fluidncJobIndex++;
+        // Update queue count display
+        let remaining = fluidncJobLines.length - fluidncJobIndex;
+        $('#queueCnt').html('Queued: ' + remaining);
+        if (line.length === 0 || line.startsWith(';') || line.startsWith('(')) {
+            // Skip empty lines and comments
+            continue;
+        }
+        // Strip inline comments
+        let commentIdx = line.indexOf(';');
+        if (commentIdx > 0) line = line.substring(0, commentIdx).trim();
+        if (line.length > 0) {
+            fluidncWS.sendLine(line);
+            return;
+        }
+    }
+    // No more lines — job done (will trigger via onOk when last ok arrives)
+}
+
+/**
+ * Check if currently using FluidNC-WS direct connection.
+ */
+function isFluidNCWS() {
+    return connectVia === 'FluidNC-WS' && fluidncWS && fluidncWS.isConnected();
 }
 
 function updateStatus(data) {
@@ -634,6 +856,13 @@ function updateStatus(data) {
 
 
 export function runCommand(gcode) {
+    if (isFluidNCWS()) {
+        if (gcode) {
+            fluidncWS.sendLine(gcode);
+            return true;
+        }
+        return false;
+    }
     if (serverConnected) {
         if (machineConnected){
             if (gcode) {
@@ -652,6 +881,24 @@ export function runCommand(gcode) {
 }
 
 export function runJob(job) {
+    if (isFluidNCWS()) {
+        if (job.length > 0) {
+            CommandHistory.write('Running Job via FluidNC-WS', CommandHistory.INFO);
+            playing = true;
+            fluidncJobRunning = true;
+            fluidncJobLines = job.split('\n');
+            fluidncJobIndex = 0;
+            runStatus('running');
+            $('#playicon').removeClass('fa-play');
+            $('#playicon').addClass('fa-pause');
+            jobStartTime = new Date(Date.now());
+            // Send the first line to kick off the flow
+            fluidncSendNextJobLine();
+        } else {
+            CommandHistory.error('Job empty!')
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             if (job.length > 0) {
@@ -675,6 +922,15 @@ export function runJob(job) {
 
 export function pauseJob() {
     console.log('pauseJob');
+    if (isFluidNCWS()) {
+        paused = true;
+        fluidncJobRunning = false; // Stop sending lines
+        runStatus('paused');
+        $('#playicon').removeClass('fa-pause');
+        $('#playicon').addClass('fa-play');
+        fluidncWS.sendRealtime('!'); // GRBL feed hold
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             paused = true;
@@ -692,6 +948,16 @@ export function pauseJob() {
 
 export function resumeJob() {
     console.log('resumeJob');
+    if (isFluidNCWS()) {
+        paused = false;
+        m0 = false;
+        fluidncJobRunning = true; // Resume sending lines
+        runStatus('running');
+        $('#playicon').removeClass('fa-play');
+        $('#playicon').addClass('fa-pause');
+        fluidncWS.sendRealtime('~'); // GRBL cycle start / resume
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             paused = false;
@@ -710,6 +976,20 @@ export function resumeJob() {
 
 export function abortJob() {
     console.log('abortJob');
+    if (isFluidNCWS()) {
+        CommandHistory.write('Aborting job', CommandHistory.INFO);
+        playing = false;
+        paused = false;
+        m0 = false;
+        fluidncJobRunning = false;
+        fluidncJobLines = [];
+        fluidncJobIndex = 0;
+        runStatus('stopped');
+        $('#playicon').removeClass('fa-pause');
+        $('#playicon').addClass('fa-play');
+        fluidncWS.sendRealtime('\x18'); // Ctrl-X soft reset
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Aborting job', CommandHistory.INFO);
@@ -730,6 +1010,15 @@ export function abortJob() {
 
 export function clearAlarm(method) {
     console.log('clearAlarm');
+    if (isFluidNCWS()) {
+        CommandHistory.write('Resetting alarm', CommandHistory.INFO);
+        if (method === 2) {
+            fluidncWS.sendLine('$H'); // Home
+        } else {
+            fluidncWS.sendLine('$X'); // Kill alarm lock
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Resetting alarm', CommandHistory.INFO);
@@ -743,6 +1032,15 @@ export function clearAlarm(method) {
 }
 
 export function setZero(axis) {
+    if (isFluidNCWS()) {
+        CommandHistory.write('Set ' + axis + ' Axis zero', CommandHistory.INFO);
+        if (axis === 'all') {
+            fluidncWS.sendLine('G10 L20 P1 X0 Y0 Z0');
+        } else {
+            fluidncWS.sendLine('G10 L20 P1 ' + axis + '0');
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Set ' + axis + ' Axis zero', CommandHistory.INFO);
@@ -756,6 +1054,15 @@ export function setZero(axis) {
 }
 
 export function gotoZero(axis) {
+    if (isFluidNCWS()) {
+        CommandHistory.write('Goto ' + axis + ' zero', CommandHistory.INFO);
+        if (axis === 'all') {
+            fluidncWS.sendLine('G0 X0 Y0 Z0');
+        } else {
+            fluidncWS.sendLine('G0 ' + axis + '0');
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Goto ' + axis + ' zero', CommandHistory.INFO);
@@ -769,6 +1076,16 @@ export function gotoZero(axis) {
 }
 
 export function setPosition(data) {
+    if (isFluidNCWS()) {
+        CommandHistory.write('Set position to ' + JSON.stringify(data), CommandHistory.INFO);
+        let cmd = 'G10 L20 P1';
+        if (data.x !== undefined) cmd += ' X' + data.x;
+        if (data.y !== undefined) cmd += ' Y' + data.y;
+        if (data.z !== undefined) cmd += ' Z' + data.z;
+        if (data.a !== undefined) cmd += ' A' + data.a;
+        fluidncWS.sendLine(cmd);
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Set position to ' + JSON.stringify(data), CommandHistory.INFO);
@@ -782,6 +1099,15 @@ export function setPosition(data) {
 }
 
 export function home(axis) {
+    if (isFluidNCWS()) {
+        CommandHistory.write('Home ' + axis, CommandHistory.INFO);
+        if (axis === 'all') {
+            fluidncWS.sendLine('$H');
+        } else {
+            fluidncWS.sendLine('$H' + axis);
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Home ' + axis, CommandHistory.INFO);
@@ -795,6 +1121,15 @@ export function home(axis) {
 }
 
 export function probe(axis, offset) {
+    if (isFluidNCWS()) {
+        CommandHistory.write('Probe ' + axis + ' (Offset:' + offset + ')', CommandHistory.INFO);
+        fluidncWS.sendLine('G38.2 ' + axis + '-50 F100');
+        if (offset) {
+            // After probe, set WCO with offset
+            fluidncWS.sendLine('G10 L20 P1 ' + axis + offset);
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.write('Probe ' + axis + ' (Offset:' + offset + ')', CommandHistory.INFO);
@@ -808,6 +1143,21 @@ export function probe(axis, offset) {
 }
 
 export function laserTest(power, duration, maxS) {
+    if (isFluidNCWS()) {
+        console.log('laserTest(' + power + ', ' + duration + ', ' + maxS + ')');
+        let sValue = Math.round((power / 100) * maxS);
+        fluidncWS.sendLine('G1 F1 S' + sValue);
+        if (duration > 0) {
+            laserTestOn = true;
+            $('#lT').addClass('btn-highlight');
+            setTimeout(() => {
+                fluidncWS.sendLine('M5 S0');
+                laserTestOn = false;
+                $('#lT').removeClass('btn-highlight');
+            }, duration);
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             console.log('laserTest(' + power + ', ' + duration + ', ' + maxS + ')');
@@ -821,6 +1171,10 @@ export function laserTest(power, duration, maxS) {
 }
 
 export function jog(axis, dist, feed) {
+    if (isFluidNCWS()) {
+        fluidncWS.sendLine('$J=G91 ' + axis + dist + ' F' + feed);
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             //console.log('jog(' + axis + ',' + dist + ',' + feed + ')');
@@ -834,6 +1188,16 @@ export function jog(axis, dist, feed) {
 }
 
 export function jogTo(x, y, z, mode, feed) {
+    if (isFluidNCWS()) {
+        let modeStr = (mode === 'G90') ? 'G90' : 'G91';
+        let cmd = '$J=' + modeStr;
+        if (x !== undefined && x !== null) cmd += ' X' + x;
+        if (y !== undefined && y !== null) cmd += ' Y' + y;
+        if (z !== undefined && z !== null) cmd += ' Z' + z;
+        cmd += ' F' + feed;
+        fluidncWS.sendLine(cmd);
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             //console.log('jog(' + axis + ',' + dist + ',' + feed + ')');
@@ -847,6 +1211,16 @@ export function jogTo(x, y, z, mode, feed) {
 }
 
 export function feedOverride(step) {
+    if (isFluidNCWS()) {
+        console.log('feedOverride ' + step);
+        // GRBL realtime feed override commands
+        if (step === 1) fluidncWS.sendRealtime('\x91');       // +10%
+        else if (step === -1) fluidncWS.sendRealtime('\x92');  // -10%
+        else if (step === 10) fluidncWS.sendRealtime('\x91');  // +10%
+        else if (step === -10) fluidncWS.sendRealtime('\x92'); // -10%
+        else if (step === 0) fluidncWS.sendRealtime('\x90');   // Reset to 100%
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             console.log('feedOverride ' + step);
@@ -860,6 +1234,16 @@ export function feedOverride(step) {
 }
 
 export function spindleOverride(step) {
+    if (isFluidNCWS()) {
+        console.log('spindleOverride ' + step);
+        // GRBL realtime spindle override commands
+        if (step === 1) fluidncWS.sendRealtime('\x9C');       // +10%
+        else if (step === -1) fluidncWS.sendRealtime('\x9D');  // -10%
+        else if (step === 10) fluidncWS.sendRealtime('\x9C');  // +10%
+        else if (step === -10) fluidncWS.sendRealtime('\x9D'); // -10%
+        else if (step === 0) fluidncWS.sendRealtime('\x99');   // Reset to 100%
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             console.log('spindleOverride ' + step);
@@ -873,6 +1257,16 @@ export function spindleOverride(step) {
 }
 
 export function resetMachine() {
+    if (isFluidNCWS()) {
+        CommandHistory.error('Resetting Machine');
+        fluidncJobRunning = false;
+        fluidncJobLines = [];
+        fluidncJobIndex = 0;
+        playing = false;
+        paused = false;
+        fluidncWS.sendRealtime('\x18'); // Ctrl-X soft reset
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             CommandHistory.error('Resetting Machine')
@@ -886,6 +1280,30 @@ export function resetMachine() {
 }
 
 export function playpauseMachine() {
+    if (isFluidNCWS()) {
+        if (playing === true) {
+            if (paused === true) {
+                // Resume
+                paused = false;
+                fluidncJobRunning = true;
+                runStatus('running');
+                $('#playicon').removeClass('fa-play');
+                $('#playicon').addClass('fa-pause');
+                fluidncWS.sendRealtime('~');
+            } else {
+                // Pause
+                paused = true;
+                fluidncJobRunning = false;
+                runStatus('paused');
+                $('#playicon').removeClass('fa-pause');
+                $('#playicon').addClass('fa-play');
+                fluidncWS.sendRealtime('!');
+            }
+        } else {
+            playGcode();
+        }
+        return;
+    }
     if (serverConnected) {
         if (machineConnected){
             if (playing === true) {

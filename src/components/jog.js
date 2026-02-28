@@ -16,6 +16,7 @@ import CommandHistory from './command-history';
 import { Input, TextField, NumberField, ToggleField, SelectField } from './forms';
 import { runCommand, runJob, pauseJob, resumeJob, abortJob, clearAlarm, setZero, gotoZero, setPosition, home, probe, checkSize, laserTest, jog, jogTo, feedOverride, spindleOverride, resetMachine } from './com.js';
 import { MacrosBar } from './macros';
+import { listSDFiles } from '../lib/fluidnc-http';
 
 import '../styles/index.css'
 import Icon from './font-awesome'
@@ -896,6 +897,8 @@ class Jog extends React.Component {
 
                         <div className="well well-sm" style={{ marginBottom: 7}} id="macrosBar"><MacrosBar /></div>
 
+                        {settings.connectIP ? <FluidNCSDPrint settings={settings} /> : undefined}
+
             </div>
         )
     }
@@ -904,6 +907,117 @@ class Jog extends React.Component {
 Jog = connect(
     state => ({ settings: state.settings, jogStepsize: state.jogStepsize, gcode: state.gcode.content })
 )(Jog);
+
+/**
+ * FluidNCSDPrint — compact panel in the Control tab for running files from
+ * the FluidNC SD card.
+ *
+ * Fetches the SD file list via HTTP and sends `$SD/Run=<file>` via WebSocket
+ * when the user clicks Run.
+ */
+class FluidNCSDPrint extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            files: [],
+            selected: '',
+            loading: false,
+            error: null,
+        };
+    }
+
+    getHost() {
+        let ip = this.props.settings.connectIP || '';
+        if (!ip) return '';
+        let port = this.props.settings.connectHTTPPort || '80';
+        if (ip.match(/:\d+$/)) return ip;
+        return ip + ':' + port;
+    }
+
+    componentDidMount() {
+        this.loadFiles();
+    }
+
+    loadFiles() {
+        let host = this.getHost();
+        if (!host) return;
+        this.setState({ loading: true, error: null });
+        listSDFiles(host, '/')
+            .then(function(result) {
+                // Flatten only .gcode/.nc/.g files, skip directories
+                let flat = [];
+                function collect(files, prefix) {
+                    (files || []).forEach(function(f) {
+                        let name = f.name || '';
+                        if (Number(f.size) < 0) return; // directory
+                        let path = (prefix === '/' ? '' : prefix) + '/' + name;
+                        flat.push(path.replace(/\/\//g, '/'));
+                    });
+                }
+                collect(result.files || [], '/');
+                this.setState({
+                    files: flat,
+                    selected: flat.length ? flat[0] : '',
+                    loading: false,
+                });
+            }.bind(this))
+            .catch(function(err) {
+                this.setState({ loading: false, error: String(err) });
+            }.bind(this));
+    }
+
+    runFile() {
+        let file = this.state.selected;
+        if (!file) return;
+        // Strip leading slash — FluidNC $SD/Run expects path without leading /
+        let path = file.replace(/^\//, '');
+        CommandHistory.write('FluidNC SD: Run ' + path, CommandHistory.INFO);
+        runCommand('$SD/Run=' + path);
+    }
+
+    render() {
+        let { files, selected, loading, error } = this.state;
+        return (
+            <div className="well well-sm" style={{ marginBottom: 7 }}>
+                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                    <i className="fa fa-hdd-o fa-fw" aria-hidden="true"></i>
+                    {' FluidNC SD Print'}
+                    <button
+                        className="btn btn-xs btn-default"
+                        style={{ float: 'right' }}
+                        onClick={this.loadFiles.bind(this)}
+                        disabled={loading}
+                        title="Refresh file list"
+                    >
+                        <i className={loading ? 'fa fa-spinner fa-spin' : 'fa fa-refresh'} />
+                    </button>
+                </div>
+                {error && <div style={{ color: 'red', fontSize: '0.85em', marginBottom: 4 }}>{error}</div>}
+                <div className="input-group input-group-sm">
+                    <select
+                        className="form-control"
+                        value={selected}
+                        onChange={function(e) { this.setState({ selected: e.target.value }); }.bind(this)}
+                        disabled={loading || files.length === 0}
+                    >
+                        {files.length === 0 && <option value="">{loading ? 'Loading…' : 'No files'}</option>}
+                        {files.map(function(f) { return <option key={f} value={f}>{f}</option>; })}
+                    </select>
+                    <span className="input-group-btn">
+                        <button
+                            className="btn btn-primary btn-sm"
+                            onClick={this.runFile.bind(this)}
+                            disabled={!selected || loading}
+                            title="Run selected file from SD card"
+                        >
+                            <i className="fa fa-play" /> Run
+                        </button>
+                    </span>
+                </div>
+            </div>
+        );
+    }
+}
 
 // Exports
 export default Jog

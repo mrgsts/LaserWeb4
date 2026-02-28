@@ -10,6 +10,9 @@ RUN npm config set strict-ssl false
 RUN npm set progress=false && npm config set depth 0
 RUN npm ci --unsafe-perm
 
+# Patch lw.comm-server to add FluidNC HTTP proxy (avoids CORS)
+RUN node /app/patches/patch-comm-server.js
+
 # Build without minification (UglifyJS doesn't support ES6+)
 RUN npx webpack --progress --colors
 

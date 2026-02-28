@@ -1,5 +1,7 @@
 var webpack = require('webpack');
 var path = require('path');
+var http = require('http');
+var url = require('url');
 
 var src_path = path.resolve('./src');
 var dist_path = path.resolve('./dist');
@@ -64,7 +66,62 @@ module.exports = {
         contentBase: dist_path,
         inline: false,
         hot: true,
-        host: 'localhost' // originally 0.0.0.0
+        host: 'localhost', // originally 0.0.0.0
+        before: function(app) {
+            // Dynamic proxy for FluidNC HTTP API to avoid CORS.
+            // Client sends:  /fluidnc-proxy/<host>:<port>/actual/path?query
+            // Proxy forwards: http://<host>:<port>/actual/path?query
+            app.use(function(req, res, next) {
+                var prefix = '/fluidnc-proxy/';
+                if (req.url.indexOf(prefix) !== 0) {
+                    return next();
+                }
+
+                var afterPrefix = req.url.substring(prefix.length);
+                var slashIdx = afterPrefix.indexOf('/');
+                if (slashIdx === -1) {
+                    res.writeHead(400, {'Content-Type': 'text/plain'});
+                    res.end('Bad proxy URL: missing path after host');
+                    return;
+                }
+                var targetHost = afterPrefix.substring(0, slashIdx);
+                var targetPath = afterPrefix.substring(slashIdx);
+                var parts = targetHost.split(':');
+                var hostname = parts[0];
+                var port = parts[1] ? parseInt(parts[1]) : 80;
+
+                console.log('FluidNC proxy: ' + req.method + ' -> http://' + targetHost + targetPath);
+
+                var options = {
+                    hostname: hostname,
+                    port: port,
+                    path: targetPath,
+                    method: req.method,
+                    headers: {}
+                };
+                // Copy only safe headers
+                if (req.headers['content-type']) options.headers['content-type'] = req.headers['content-type'];
+                if (req.headers['content-length']) options.headers['content-length'] = req.headers['content-length'];
+                if (req.headers['accept']) options.headers['accept'] = req.headers['accept'];
+
+                var proxyReq = http.request(options, function(proxyRes) {
+                    // Add CORS headers to the proxied response
+                    var headers = Object.assign({}, proxyRes.headers, {
+                        'Access-Control-Allow-Origin': '*'
+                    });
+                    res.writeHead(proxyRes.statusCode, headers);
+                    proxyRes.pipe(res, { end: true });
+                });
+
+                proxyReq.on('error', function(e) {
+                    console.error('FluidNC proxy error:', e.message);
+                    res.writeHead(502, {'Content-Type': 'text/plain'});
+                    res.end('Proxy error: ' + e.message);
+                });
+
+                req.pipe(proxyReq, { end: true });
+            });
+        }
     },
     devtool: 'source-map'
 };
