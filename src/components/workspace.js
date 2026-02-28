@@ -1512,9 +1512,26 @@ class Workspace extends React.Component {
 
     render() {
         let { camera, gcode, workspace, settings, setG0Rate, setRotaryDiameter, setShowPerspective, setShowGcode, setShowLaser, setShowDocuments, setShowRotary, setShowWebcam, setRasterPreview, enableVideo } = this.props;
-        if (this.gcode !== gcode) {
+        if (this.gcode !== gcode || this.gcodeSettings !== settings) {
             this.gcode = gcode;
+            this.gcodeSettings = settings;
             let parsedGcode = parseGcode(gcode);
+            // Transform machine coordinates to WebGL coordinates for preview rendering.
+            // GCode X,Y are in machine space (from origin corner); WebGL needs them in world space.
+            const parsedStride = 9;
+            const { ox, oy, xDir, yDir } = getMachineOrigin(
+                settings.machineOrigin,
+                settings.machineBottomLeftX || 0,
+                settings.machineBottomLeftY || 0,
+                settings.machineWidth,
+                settings.machineHeight,
+                settings.machineOriginInvertX,
+                settings.machineOriginInvertY
+            );
+            for (let i = 0; i < parsedGcode.length; i += parsedStride) {
+                parsedGcode[i + 1] = ox + parsedGcode[i + 1] * xDir; // x
+                parsedGcode[i + 2] = oy + parsedGcode[i + 2] * yDir; // y
+            }
             this.gcodePreview.setParsedGcode(parsedGcode);
             this.laserPreview.setParsedGcode(parsedGcode);
         }
