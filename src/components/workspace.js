@@ -36,6 +36,7 @@ import { convertOutlineToThickLines } from '../draw-commands/thick-lines'
 import { Input } from './forms.js';
 import SetSize from './setsize';
 import { dist } from '../lib/cam';
+import { getParentIds } from '../reducers/object';
 import { parseGcode } from '../lib/tmpParseGcode';
 import Pointable from '../lib/Pointable';
 import { clamp } from '../lib/helpers'
@@ -1230,16 +1231,33 @@ class WorkspaceContent extends React.Component {
 
         let cachedDocument = this.hitTest(e.pageX, e.pageY);
         if (cachedDocument && e.button === 0 && !this.jogMode) {
-            this.movingObjects = true;
-            if (cachedDocument.document.selected)
-                this.needToSelect = cachedDocument.document.id;
-            else {
-                if (this.toggle)
-                    this.props.dispatch(toggleSelectDocument(cachedDocument.id));
-                else
-                    this.props.dispatch(selectDocument(cachedDocument.id));
+            let now = Date.now();
+            let isDoubleClick = this._lastClickDocId === cachedDocument.id &&
+                (now - this._lastClickTime) < 400;
+            this._lastClickTime = now;
+            this._lastClickDocId = cachedDocument.id;
+
+            if (isDoubleClick) {
+                // Double-click: select all elements in the parent group
+                let parentIds = getParentIds(this.props.documents, cachedDocument.id);
+                // parentIds = [clickedId, parentId, grandparentId, ...]
+                let parentId = parentIds.length > 1 ? parentIds[1] : cachedDocument.id;
+                this.props.dispatch(selectDocument(parentId));
+                this.movingObjects = true;
+                this.needToSelect = null;
+            } else {
+                this.movingObjects = true;
+                if (cachedDocument.document.selected)
+                    this.needToSelect = cachedDocument.document.id;
+                else {
+                    if (this.toggle)
+                        this.props.dispatch(toggleSelectDocument(cachedDocument.id));
+                    else
+                        this.props.dispatch(selectDocument(cachedDocument.id));
+                }
             }
         } else {
+            this._lastClickDocId = null;
             this.adjustingCamera = true;
         }
     }
