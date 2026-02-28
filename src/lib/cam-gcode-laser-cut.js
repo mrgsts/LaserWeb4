@@ -215,6 +215,7 @@ export function getLaserCutGcodeFromOp(settings, opIndex, op, geometry, openGeom
 
     if (!ok) {
         done(false);
+        return;
     }
 
     let camPaths = [];

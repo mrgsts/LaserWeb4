@@ -221,8 +221,10 @@ export function getMillGcodeFromOp(settings, opIndex, op, geometry, openGeometry
         showAlert("Cut Rate must be greater than 0", "danger");
         ok = false;
     }
-    if (!ok)
+    if (!ok) {
         done(false);
+        return;
+    }
 
     if (tabGeometry && op.toolDiameter > 0)
         tabGeometry = offset(tabGeometry, op.toolDiameter / 2 * mmToClipperScale);

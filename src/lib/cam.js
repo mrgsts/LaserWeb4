@@ -182,6 +182,16 @@ export function insideOutside(geometry, cutterDia, isInside, width, stepover, cl
     let allPaths = [];
     let eachWidth = cutterDia * stepover;
 
+    // Guard against infinite loop when cutterDia or stepover is 0.
+    if (eachWidth <= 0) {
+        let current = offset(geometry, isInside ? -cutterDia / 2 : cutterDia / 2);
+        if (current.length) {
+            closeClipperPaths(current);
+            return mergePaths(null, current);
+        }
+        return [];
+    }
+
     let current;
     let bounds = null;
     let eachOffset;
