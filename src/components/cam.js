@@ -19,7 +19,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { connect } from 'react-redux';
 
-import { loadDocument, setDocumentAttrs, cloneDocumentSelected, selectDocuments,colorDocumentSelected,removeDocumentSelected } from '../actions/document';
+import { loadDocument, setDocumentAttrs, cloneDocumentSelected, selectDocuments,colorDocumentSelected,removeDocumentSelected, selectDocumentsByColor, toggleVisibleDocumentsByColor } from '../actions/document';
 
 import { setGcode, generatingGcode } from '../actions/gcode';
 import { resetWorkspace } from '../actions/laserweb';
@@ -182,6 +182,46 @@ class Cam extends React.Component {
                 <Splitter style={{ flexShrink: 0 }} split="horizontal" initialSize={100} resizerStyle={{ marginTop: 2, marginBottom: 2 }} splitterId="cam-documents">
                     <div style={{height:"100%", display:"flex", flexDirection:"column"}} >
                         <div style={{ overflowY: 'auto', flexGrow:1 }}><Documents documents={documents} filter={this.state.filter} toggleExpanded={toggleDocumentExpanded} /></div>
+                        {documents.length > 0 && (() => {
+                            let colorMap = {};
+                            documents.forEach(function(doc) {
+                                [doc.strokeColor, doc.fillColor].forEach(function(c) {
+                                    if (c && c[3] > 0) {
+                                        let key = Math.round(c[0]*255) + ',' + Math.round(c[1]*255) + ',' + Math.round(c[2]*255);
+                                        if (!colorMap[key]) colorMap[key] = [c[0], c[1], c[2]];
+                                    }
+                                });
+                            });
+                            let colors = Object.keys(colorMap).map(function(k) { return colorMap[k]; });
+                            if (colors.length === 0) return null;
+                            return (
+                                <div style={{ padding: '2px 4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <small style={{ marginRight: 4 }}>Select by color:</small>
+                                    {colors.map((c, i) => {
+                                        let r = Math.round(c[0]*255), g = Math.round(c[1]*255), b = Math.round(c[2]*255);
+                                        let colorMatch = function(dc) { return dc && dc[3] > 0 && Math.abs(dc[0]-c[0])<0.01 && Math.abs(dc[1]-c[1])<0.01 && Math.abs(dc[2]-c[2])<0.01; };
+                                        let allHidden = documents.filter(function(d) { return colorMatch(d.strokeColor) || colorMatch(d.fillColor); })
+                                            .every(function(d) { return d.visible === false; });
+                                        return (
+                                            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', margin: 1 }}>
+                                                <button
+                                                    style={{ width: 18, height: 18, minWidth: 18, border: '1px solid #555', borderRadius: 2, padding: 0, cursor: 'pointer',
+                                                        backgroundColor: 'rgb(' + r + ',' + g + ',' + b + ')' }}
+                                                    title={'Select all with color rgb(' + r + ',' + g + ',' + b + ')'}
+                                                    onClick={() => this.props.dispatch(selectDocumentsByColor(c))}
+                                                />
+                                                <button
+                                                    style={{ width: 16, height: 18, minWidth: 16, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', opacity: allHidden ? 0.4 : 1, fontSize: 11 }}
+                                                    title={allHidden ? 'Show elements with this color' : 'Hide elements with this color'}
+                                                    onClick={() => this.props.dispatch(toggleVisibleDocumentsByColor(c))}>
+                                                    <Icon name={allHidden ? 'eye-slash' : 'eye'} />
+                                                </button>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })()}
                         {documents.length ? <ButtonToolbar bsSize="xsmall" bsStyle="default">
                             
                             <ButtonGroup>

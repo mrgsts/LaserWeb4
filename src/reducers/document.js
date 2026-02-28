@@ -403,7 +403,43 @@ export function documents(state, action) {
                 if (!o.selected) return o;
                 return Object.assign({},o,action.payload.color)
             })
-            return state;
+        }
+
+        case 'DOCUMENT_SELECT_BY_COLOR': {
+            let c = action.payload.color;
+            let colorMatch = function(dc) {
+                return dc && dc[3] > 0 &&
+                    Math.abs(dc[0] - c[0]) < 0.01 &&
+                    Math.abs(dc[1] - c[1]) < 0.01 &&
+                    Math.abs(dc[2] - c[2]) < 0.01;
+            };
+            return state.map(function(o) {
+                let match = colorMatch(o.strokeColor) || colorMatch(o.fillColor);
+                return Object.assign({}, o, { selected: match });
+            });
+        }
+
+        case 'DOCUMENT_TOGGLE_VISIBLE_BY_COLOR': {
+            let c = action.payload.color;
+            let colorMatch = function(dc) {
+                return dc && dc[3] > 0 &&
+                    Math.abs(dc[0] - c[0]) < 0.01 &&
+                    Math.abs(dc[1] - c[1]) < 0.01 &&
+                    Math.abs(dc[2] - c[2]) < 0.01;
+            };
+            // Check if any matching doc is visible — if so, hide all; otherwise show all
+            let matchingDocs = state.filter(function(o) {
+                return colorMatch(o.strokeColor) || colorMatch(o.fillColor);
+            });
+            let anyVisible = matchingDocs.some(function(o) {
+                return o.visible !== false;
+            });
+            let newVisible = !anyVisible;
+            return state.map(function(o) {
+                let match = colorMatch(o.strokeColor) || colorMatch(o.fillColor);
+                if (!match) return o;
+                return Object.assign({}, o, { visible: newVisible });
+            });
         }
 
         case 'WORKSPACE_RESET':
