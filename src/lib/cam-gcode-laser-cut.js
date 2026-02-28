@@ -15,7 +15,7 @@
 
 'use strict';
 
-import { dist, cut, fillPath, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve } from './cam';
+import { dist, cut, fillPath, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve, sortCamPathsInsideFirst } from './cam';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
 import { getGenerator } from "./action2gcode/gcode-generator";
 import { getMachineOriginFromSettings } from './helpers';
@@ -235,6 +235,10 @@ export function getLaserCutGcodeFromOp(settings, opIndex, op, geometry, openGeom
     }
 
     reduceCamPaths(camPaths, op.segmentLength * mmToClipperScale);
+
+    // Sort paths so interior features are cut before exterior contours.
+    if (op.orderInsideFirst)
+        sortCamPathsInsideFirst(camPaths);
 
     let feedScale = 1;
     if (settings.toolFeedUnits === 'mm/s')

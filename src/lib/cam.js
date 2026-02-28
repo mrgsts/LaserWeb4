@@ -387,3 +387,74 @@ export function separateTabs(cutterPath, tabGeometry) {
 
     return result;
 }
+
+// Compute bounding box of a Clipper path.
+function pathBounds(path) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i < path.length; ++i) {
+        let p = path[i];
+        if (p.X < minX) minX = p.X;
+        if (p.X > maxX) maxX = p.X;
+        if (p.Y < minY) minY = p.Y;
+        if (p.Y > maxY) maxY = p.Y;
+    }
+    return { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
+}
+
+// Check if bounding box 'outer' fully contains bounding box 'inner'.
+function boundsContains(outer, inner) {
+    return inner.minX >= outer.minX && inner.maxX <= outer.maxX &&
+           inner.minY >= outer.minY && inner.maxY <= outer.maxY;
+}
+
+/**
+ * Sort camPaths so that interior paths (enclosed by other paths) are cut
+ * before the paths that contain them. This is standard CNC practice: you
+ * cut inner features first so the workpiece remains held in place.
+ *
+ * Algorithm: for each path, count how many other paths' bounding boxes
+ * fully contain it (its "depth"). Deeper paths are cut first.
+ * Paths at the same depth are sorted by ascending bounding-box area
+ * (smaller first) as a secondary criterion.
+ *
+ * @param {Array} camPaths - Array of CamPath objects ({path, safeToClose})
+ * @returns {Array} The same array, sorted in-place.
+ */
+export function sortCamPathsInsideFirst(camPaths) {
+    if (camPaths.length < 2) return camPaths;
+
+    // Precompute bounds and area for each path.
+    let info = camPaths.map(function(cp) {
+        let b = pathBounds(cp.path);
+        let area = (b.maxX - b.minX) * (b.maxY - b.minY);
+        return { bounds: b, area: area };
+    });
+
+    // Compute containment depth for each path.
+    let depth = new Array(camPaths.length);
+    for (let i = 0; i < camPaths.length; ++i) {
+        let d = 0;
+        for (let j = 0; j < camPaths.length; ++j) {
+            if (j !== i && boundsContains(info[j].bounds, info[i].bounds)) {
+                d++;
+            }
+        }
+        depth[i] = d;
+    }
+
+    // Build index array and sort.
+    let indices = camPaths.map(function(_, i) { return i; });
+    indices.sort(function(a, b) {
+        // Higher depth first (deeper = more interior).
+        if (depth[b] !== depth[a]) return depth[b] - depth[a];
+        // Same depth: smaller area first.
+        return info[a].area - info[b].area;
+    });
+
+    // Reorder camPaths in-place.
+    let sorted = indices.map(function(i) { return camPaths[i]; });
+    for (let i = 0; i < sorted.length; ++i) {
+        camPaths[i] = sorted[i];
+    }
+    return camPaths;
+}

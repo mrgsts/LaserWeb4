@@ -16,6 +16,7 @@ export const OPERATION_INITIALSTATE = {
     type: 'Laser Cut',
     filterFillColor: null,
     filterStrokeColor: null,
+    orderInsideFirst: true,
     direction: 'Conventional',
     laserPower: 100,
     laserPowerRange: { min: 0, max: 100 },
