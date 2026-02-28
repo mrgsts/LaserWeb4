@@ -1242,7 +1242,10 @@ class WorkspaceContent extends React.Component {
                 let parentIds = getParentIds(this.props.documents, cachedDocument.id);
                 // parentIds = [clickedId, parentId, grandparentId, ...]
                 let parentId = parentIds.length > 1 ? parentIds[1] : cachedDocument.id;
-                this.props.dispatch(selectDocument(parentId));
+                if (this.toggle)
+                    this.props.dispatch(toggleSelectDocument(parentId));
+                else
+                    this.props.dispatch(selectDocument(parentId));
                 this.movingObjects = true;
                 this.needToSelect = null;
             } else {
