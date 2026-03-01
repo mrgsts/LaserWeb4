@@ -1,5 +1,44 @@
 # LaserWeb (4.0.x)
 
+---
+
+## Fork Changes
+
+This is a fork of the original [LaserWeb4](https://github.com/LaserWeb/LaserWeb4) (`dev-es6` branch). The following features and bug fixes have been added on top of the original codebase.
+
+### Bug Fixes
+
+- **GCode generation for mixed open/closed geometry** — Documents containing both closed paths (shapes/polygons) and open paths (lines, polylines, strokes) now correctly generate GCode for all elements. Previously, the preflight worker's path classification logic would discard open paths whenever any closed path was present in the same document, because Clipper's `CleanPolygons`/`SimplifyPolygons` was applied to all paths at once. Closed and open raw paths are now split and processed independently before routing to `geometry` and `openGeometry` respectively.
+
+- **GCode preview coordinate system** — GCode preview rendering now correctly transforms machine coordinates to WebGL space, respecting the configured machine origin position and axis directions.
+
+### New Features
+
+#### Machine Origin & Coordinate System
+- **Configurable machine origin** — Added support for selecting the machine origin corner (`BL`, `BR`, `TL`, `TR`) with per-axis inversion options. All coordinate transforms (GCode generation, preview rendering, object placement) respect the configured origin and axis directions.
+
+#### FluidNC Support
+- **FluidNC HTTP and WebSocket integration** — Added a FluidNC communication backend using HTTP and WebSocket clients, enabling native connectivity to FluidNC-based controllers alongside the existing Grbl/Smoothieware/TinyG support.
+
+#### Workspace & Selection
+- **Double-click to select parent group** — Double-clicking an element in the workspace now selects its parent group instead of the individual child element, making it easier to work with grouped SVG structures.
+- **Toggle selection** — Added toggle-based document selection in the workspace canvas (clicking a selected document deselects it).
+- **Select / toggle visibility by color** — Documents can now be selected or have their visibility toggled by matching stroke/fill color, making it easy to manage layers imported from multi-color SVG files.
+
+#### CAM Operations
+- **Order inside features first** — Laser Cut and Mill operations now support an *Order Inside First* option, which sorts toolpaths so that interior features (pockets, holes) are cut before the outer contour, preventing the workpiece from shifting.
+- **Genetic algorithm path optimization** — Laser Cut and Mill operations expose configurable parameters for the Genetic Algorithm (GA) used to minimize rapid travel between paths: population size, number of generations, crossover rate, and mutation rate.
+- **Improved error handling in GCode generation** — Validation errors in laser cut operations no longer silently continue past the `done(false)` call; generation is now properly aborted when parameters are invalid.
+
+#### Floating Toolbar
+- **Duplicate selected object** — A *Duplicate* button has been added to the floating selection toolbar (equivalent to `Ctrl+D`), creating an in-place copy of the selected document(s).
+- **Array Clone** — An *Array* button in the floating toolbar opens an inline panel to create a rectangular grid of copies. Parameters include number of rows and columns, X/Y gap between copies, and a *Gap + Size* toggle to choose between center-to-center or edge-to-edge spacing. Offsets are automatically adjusted to respect the configured machine origin coordinate system.
+
+#### Keyboard Shortcuts
+- **Delete key removes selected objects** — Pressing `Delete` or `Backspace` while the workspace has focus now removes the currently selected document(s). The shortcut is suppressed when a text input, number field, or select control is focused to prevent accidental deletions while editing values in the toolbar.
+
+---
+
 This repository is a "development environment" - and no regular user would have to touch this at all (dont download the repo from here, use the Download links below)
 
 ## Download
