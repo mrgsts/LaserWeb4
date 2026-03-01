@@ -390,6 +390,62 @@ export function documents(state, action) {
             return [...state,...clones];
         }
 
+        case 'DOCUMENT_ARRAY_CLONE_SELECTED': {
+            let { rows, columns, spacingX, spacingY } = action.payload;
+            let allClones = [];
+            // Find top-level selected docs (not children of other selected docs)
+            let selectedRoots = state.filter(d => d.selected).filter((d, index, t) => {
+                return !t.find(i => (i.selected && i.children.includes(d.id)));
+            });
+
+            // Compute bounds of the selected elements
+            let selBounds = { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity };
+            selectedRoots.forEach(sel => {
+                let ids = getSubtreeIds(state, sel.id);
+                ids.forEach(id => {
+                    let doc = state.find(o => o.id === id);
+                    if (doc && doc.transform2d) {
+                        // Approximate bounds using transform translation
+                        selBounds.x1 = Math.min(selBounds.x1, doc.transform2d[4]);
+                        selBounds.y1 = Math.min(selBounds.y1, doc.transform2d[5]);
+                        selBounds.x2 = Math.max(selBounds.x2, doc.transform2d[4]);
+                        selBounds.y2 = Math.max(selBounds.y2, doc.transform2d[5]);
+                    }
+                });
+            });
+
+            const countOf = (name) => { return state.filter(d => d.isRoot && (d.name.indexOf(name) >= 0)).length; }
+            let nameCounter = {};
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < columns; col++) {
+                    if (row === 0 && col === 0) continue; // skip original
+                    let offsetX = col * spacingX;
+                    let offsetY = row * spacingY;
+                    selectedRoots.forEach(sel => {
+                        let cloned = cloneDocument(state, sel.id, (d, index) => {
+                            if (index) return d.name;
+                            let baseName = d.name.replace(/\s*\([0-9]+\)$/, '');
+                            if (!nameCounter[baseName]) nameCounter[baseName] = countOf(baseName);
+                            nameCounter[baseName]++;
+                            return `${baseName} (${nameCounter[baseName]})`;
+                        });
+                        // Apply offset to each cloned doc's transform2d
+                        cloned.forEach(cd => {
+                            if (cd.transform2d) {
+                                cd.transform2d = cd.transform2d.slice();
+                                cd.transform2d[4] += offsetX;
+                                cd.transform2d[5] += offsetY;
+                            }
+                        });
+                        if (cloned.length)
+                            allClones = [...allClones, ...cloned];
+                    });
+                }
+            }
+            return [...state, ...allClones];
+        }
+
         case "DOCUMENT_REMOVE_SELECTED": {
             let ids = [];
             state.filter(d => d.selected).forEach((sel) => { ids = [...ids, ...getSubtreeIds(state, sel.id)]; })

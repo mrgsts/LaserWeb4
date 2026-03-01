@@ -33,6 +33,10 @@ export function cloneDocumentSelected() {
     return { type: 'DOCUMENT_CLONE_SELECTED' };
 }
 
+export function arrayCloneDocumentSelected({ rows, columns, spacingX, spacingY }) {
+    return { type: 'DOCUMENT_ARRAY_CLONE_SELECTED', payload: { rows, columns, spacingX, spacingY } };
+}
+
 export function selectDocuments(meta){
     return { type: 'DOCUMENT_SELECT_META', payload:{meta} };
 }

@@ -20,7 +20,7 @@ import ReactDOM from 'react-dom';
 
 import { GlobalStore } from '..';
 import { setCameraAttrs, zoomArea } from '../actions/camera'
-import { selectDocument, toggleSelectDocument, transform2dSelectedDocuments, removeDocumentSelected, cloneDocumentSelected } from '../actions/document';
+import { selectDocument, toggleSelectDocument, transform2dSelectedDocuments, removeDocumentSelected, cloneDocumentSelected, arrayCloneDocumentSelected } from '../actions/document';
 import { setWorkspaceAttrs } from '../actions/workspace';
 import { setSettingsAttrs } from '../actions/settings';
 
@@ -293,7 +293,13 @@ class FloatingControls extends React.Component {
         this.state = {
             linkScale: true,
             degrees: 45,
-            drag: this.props.settings.uiFcDrag
+            drag: this.props.settings.uiFcDrag,
+            showArrayClone: false,
+            arrayRows: 2,
+            arrayCols: 2,
+            arraySpacingX: 10,
+            arraySpacingY: 10,
+            arrayUseSize: true,
         }
     }
 
@@ -419,6 +425,30 @@ class FloatingControls extends React.Component {
         this.flipTopBorrom = v => {
             this.scale(1, -1)
         }
+
+        this.duplicateSelected = () => {
+            this.props.dispatch(cloneDocumentSelected());
+        }
+
+        this.toggleArrayClone = () => {
+            this.setState({ showArrayClone: !this.state.showArrayClone });
+        }
+
+        this.applyArrayClone = () => {
+            let { xDir, yDir } = this._getOrigin();
+            let sizeX = this.bounds.x2 - this.bounds.x1;
+            let sizeY = this.bounds.y2 - this.bounds.y1;
+            let spacingX = this.state.arrayUseSize ? sizeX + this.state.arraySpacingX : this.state.arraySpacingX;
+            let spacingY = this.state.arrayUseSize ? sizeY + this.state.arraySpacingY : this.state.arraySpacingY;
+            this.props.dispatch(arrayCloneDocumentSelected({
+                rows: this.state.arrayRows,
+                columns: this.state.arrayCols,
+                spacingX: spacingX * xDir,
+                spacingY: spacingY * yDir,
+            }));
+            this.setState({ showArrayClone: false });
+        }
+
         this.toolOptimize = (doc, scale, anchor = 'C') => {
             if (!scale) scale = 2540 / (this.props.settings.dpiBitmap * 100);
             if (doc.originalPixels) {
@@ -579,6 +609,49 @@ class FloatingControls extends React.Component {
                             </tr>
                         </tbody>
                         {tools}
+                        <tfoot>
+                            <tr>
+                                <td colSpan="8">
+                                    <ButtonGroup>
+                                        <Button bsSize="xsmall" bsStyle="primary" onClick={this.duplicateSelected} title="Duplicate selected (Ctrl+D)"><Icon name="clone" /> Duplicate</Button>
+                                        <Button bsSize="xsmall" bsStyle={this.state.showArrayClone ? 'success' : 'primary'} onClick={this.toggleArrayClone} title="Array clone selected into a grid"><Icon name="th" /> Array</Button>
+                                    </ButtonGroup>
+                                    {this.state.showArrayClone && (
+                                        <div style={{ marginTop: 4, padding: 4, border: '1px solid #ccc', borderRadius: 3, backgroundColor: '#f9f9f9' }}>
+                                            <table style={{ width: '100%', fontSize: '11px' }}>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Rows</td>
+                                                        <td><Input value={this.state.arrayRows} onChangeValue={v => this.setState({ arrayRows: Math.max(1, parseInt(v) || 1) })} type="number" min="1" step="1" /></td>
+                                                        <td>Cols</td>
+                                                        <td><Input value={this.state.arrayCols} onChangeValue={v => this.setState({ arrayCols: Math.max(1, parseInt(v) || 1) })} type="number" min="1" step="1" /></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td title="Horizontal gap between copies">Gap X</td>
+                                                        <td><Input value={this.state.arraySpacingX} onChangeValue={v => this.setState({ arraySpacingX: parseFloat(v) || 0 })} type="number" step="any" /></td>
+                                                        <td title="Vertical gap between copies">Gap Y</td>
+                                                        <td><Input value={this.state.arraySpacingY} onChangeValue={v => this.setState({ arraySpacingY: parseFloat(v) || 0 })} type="number" step="any" /></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan="2">
+                                                            <label style={{ fontWeight: 'normal', fontSize: '11px' }}>
+                                                                <input type="checkbox" checked={this.state.arrayUseSize} onChange={e => this.setState({ arrayUseSize: e.target.checked })} />
+                                                                {' '}Gap + Size
+                                                            </label>
+                                                        </td>
+                                                        <td colSpan="2">
+                                                            <Button bsSize="xsmall" bsStyle="success" onClick={this.applyArrayClone}><Icon name="check" /> Apply</Button>
+                                                            {' '}
+                                                            <Button bsSize="xsmall" bsStyle="default" onClick={this.toggleArrayClone}><Icon name="times" /></Button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </Draggable>
@@ -771,7 +844,7 @@ class WorkspaceContent extends React.Component {
     constructor(props) {
         super(props);
         this.bindings = [
-            [['alt+del', 'meta+backspace'], this.removeSelected.bind(this)],
+            [['del', 'backspace', 'alt+del', 'meta+backspace'], this.removeSelected.bind(this)],
             [['ctrl+d'], this.cloneSelected.bind(this)],
         ]
         this.drawDocsState = {};
@@ -808,6 +881,8 @@ class WorkspaceContent extends React.Component {
     removeSelected(e) {
         e.preventDefault();
         if (this.props.mode === 'jog') return;
+        let tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
         if (this.props.documents.find((d) => (d.selected)))
             this.props.dispatch(removeDocumentSelected());
     }
