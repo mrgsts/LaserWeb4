@@ -27,15 +27,28 @@ self.onmessage = (event) => {
                 } else if (matchColor(op.filterFillColor, doc.fillColor) && matchColor(op.filterStrokeColor, doc.strokeColor)) {
                     filteredDocIds.add(doc.id);
                     if (!op.type.includes('Raster')) {
-                        let isClosed = false;
-                        for (let rawPath of doc.rawPaths)
-                            if (rawPath.length >= 4 && rawPath[0] == rawPath[rawPath.length - 2] && rawPath[1] == rawPath[rawPath.length - 1])
-                                isClosed = true;
-                        let clipperPaths = rawPathsToClipperPaths(doc.rawPaths, doc.transform2d);
-                        if (isClosed)
+                        // Separate closed and open raw paths so each group is
+                        // processed independently. Mixing them causes
+                        // CleanPolygons/SimplifyPolygons (applied inside
+                        // rawPathsToClipperPaths when closed paths are present)
+                        // to discard open paths (lines/strokes), resulting in
+                        // no GCode being generated for those elements.
+                        const isPathClosed = (rawPath) =>
+                            rawPath.length >= 4 &&
+                            rawPath[0] === rawPath[rawPath.length - 2] &&
+                            rawPath[1] === rawPath[rawPath.length - 1];
+
+                        const closedRawPaths = doc.rawPaths.filter(isPathClosed);
+                        const openRawPaths   = doc.rawPaths.filter(p => !isPathClosed(p));
+
+                        if (closedRawPaths.length > 0) {
+                            let clipperPaths = rawPathsToClipperPaths(closedRawPaths, doc.transform2d);
                             geometry = xor(geometry, clipperPaths);
-                        else if (!op.filterFillColor)
+                        }
+                        if (openRawPaths.length > 0 && !op.filterFillColor) {
+                            let clipperPaths = rawPathsToClipperPaths(openRawPaths, doc.transform2d);
                             openGeometry = openGeometry.concat(clipperPaths);
+                        }
                     }
                 }
                 cb()
