@@ -1,17 +1,22 @@
-FROM node:10-alpine AS base
+FROM node:20-alpine AS base
 
 WORKDIR /app
 
 COPY . .
 
-RUN apk add --no-cache make gcc g++ python python3 linux-headers udev git eudev-dev libusb-dev pkgconf
+RUN apk add --no-cache make gcc g++ python3 py3-setuptools linux-headers udev git eudev-dev libusb-dev pkgconf \
+    && ln -sf /usr/bin/python3 /usr/bin/python
 RUN git config --global url."https://github.com".insteadOf "ssh://git@github.com"
 RUN npm config set strict-ssl false
 RUN npm set progress=false && npm config set depth 0
+# Force native addons to build from source (avoids prebuild-install's node_gyp_bins
+# ENOTEMPTY race condition with node-hid on Alpine/musl arm64)
+ENV npm_config_build_from_source=true
 RUN npm ci --unsafe-perm
 
-# Patch lw.comm-server to add FluidNC HTTP proxy (avoids CORS)
-RUN node /app/patches/patch-comm-server.js
+# webpack 2 requires OpenSSL legacy provider on Node 17+
+# --no-deprecation suppresses url.parse() warnings from webpack-dev-server 2.x
+ENV NODE_OPTIONS="--openssl-legacy-provider --no-deprecation"
 
 # Build without minification (UglifyJS doesn't support ES6+)
 RUN npx webpack --progress --colors
@@ -21,7 +26,7 @@ RUN cp /app/dist/* /app/node_modules/lw.comm-server/app/
 
 #
 # ---- Release ----
-FROM node:10-alpine
+FROM node:20-alpine
 
 ENV ENV="production"
 ENV NODE_ENV="production"
