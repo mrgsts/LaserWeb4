@@ -16,6 +16,7 @@
 'use strict';
 
 import { dist, cut, fillPath, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve, sortCamPathsInsideFirst } from './cam';
+import { optimizePathOrderGA } from './ga-path-optimizer';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
 import { getGenerator } from "./action2gcode/gcode-generator";
 import { getMachineOriginFromSettings } from './helpers';
@@ -240,6 +241,15 @@ export function getLaserCutGcodeFromOp(settings, opIndex, op, geometry, openGeom
     // Sort paths so interior features are cut before exterior contours.
     if (op.orderInsideFirst)
         sortCamPathsInsideFirst(camPaths);
+
+    // Optimize path order using Genetic Algorithm (TSP) to minimize rapid moves.
+    if (op.optimizePath)
+        optimizePathOrderGA(camPaths, {
+            populationSize: op.gaPopulation,
+            generations: op.gaGenerations,
+            crossoverRate: op.gaCrossoverRate,
+            mutationRate: op.gaMutationRate,
+        });
 
     let feedScale = 1;
     if (settings.toolFeedUnits === 'mm/s')
