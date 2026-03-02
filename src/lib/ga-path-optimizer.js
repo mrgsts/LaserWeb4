@@ -158,6 +158,24 @@ function twoOptImprove(seq, dis) {
     return s;
 }
 
+// ─── depth helpers (mirrors logic in cam.js, kept local to avoid circular deps) ─
+function _pathBounds(path) {
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (var i = 0; i < path.length; ++i) {
+        var p = path[i];
+        if (p.X < minX) minX = p.X;
+        if (p.X > maxX) maxX = p.X;
+        if (p.Y < minY) minY = p.Y;
+        if (p.Y > maxY) maxY = p.Y;
+    }
+    return { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
+}
+
+function _boundsContains(outer, inner) {
+    return inner.minX >= outer.minX && inner.maxX <= outer.maxX &&
+           inner.minY >= outer.minY && inner.maxY <= outer.maxY;
+}
+
 // ─── main GA solver ─────────────────────────────────────────────────
 /**
  * Optimize the ordering of camPaths using a Genetic Algorithm (TSP).
@@ -323,5 +341,75 @@ export function optimizePathOrderGA(camPaths, opts) {
     for (var i = 0; i < n; i++) {
         camPaths[i] = sorted[i];
     }
+    return camPaths;
+}
+
+/**
+ * Optimize path order with GA while preserving the interior-before-exterior
+ * constraint ("Order Inside First").
+ *
+ * Paths are partitioned by their containment depth (how many other paths'
+ * bounding boxes fully contain them). GA is then run independently within
+ * each depth group to minimise rapid-move travel. Groups are concatenated
+ * from deepest (most interior) to shallowest (outermost), so exterior
+ * contours are always cut last — regardless of what GA decides within each
+ * group.
+ *
+ * @param {Array}  camPaths  Array of CamPath objects, modified in-place.
+ * @param {Object} [opts]    Same options as optimizePathOrderGA.
+ * @returns {Array}          The same camPaths array, reordered in-place.
+ */
+export function optimizePathOrderGAInsideFirst(camPaths, opts) {
+    if (camPaths.length < 2) return camPaths;
+
+    // 1. Compute bounding box and containment depth for each path.
+    var info = camPaths.map(function(cp) {
+        return { bounds: _pathBounds(cp.path) };
+    });
+
+    var depth = new Array(camPaths.length);
+    for (var i = 0; i < camPaths.length; ++i) {
+        var d = 0;
+        for (var j = 0; j < camPaths.length; ++j) {
+            if (j !== i && _boundsContains(info[j].bounds, info[i].bounds)) {
+                d++;
+            }
+        }
+        depth[i] = d;
+    }
+
+    // 2. Group original indices by depth.
+    var groups = {};
+    for (var i = 0; i < camPaths.length; ++i) {
+        var d = depth[i];
+        if (!groups[d]) groups[d] = [];
+        groups[d].push(i);
+    }
+
+    // 3. Sort depth levels descending (deepest = most interior first).
+    var levels = Object.keys(groups).map(Number).sort(function(a, b) { return b - a; });
+
+    // 4. For each depth group, run GA independently then append its paths.
+    var result = [];
+    for (var li = 0; li < levels.length; li++) {
+        var level = levels[li];
+        var groupIndices = groups[level];
+        var groupPaths = groupIndices.map(function(idx) { return camPaths[idx]; });
+
+        // Only worth running GA if the group has 3+ paths.
+        if (groupPaths.length >= 3) {
+            optimizePathOrderGA(groupPaths, opts);
+        }
+
+        for (var gi = 0; gi < groupPaths.length; gi++) {
+            result.push(groupPaths[gi]);
+        }
+    }
+
+    // 5. Write back in-place.
+    for (var i = 0; i < result.length; i++) {
+        camPaths[i] = result[i];
+    }
+
     return camPaths;
 }

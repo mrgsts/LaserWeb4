@@ -16,7 +16,7 @@
 'use strict';
 
 import { dist, cut, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve, sortCamPathsInsideFirst } from './cam';
-import { optimizePathOrderGA } from './ga-path-optimizer';
+import { optimizePathOrderGA, optimizePathOrderGAInsideFirst } from './ga-path-optimizer';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
 import { getMachineOriginFromSettings } from './helpers';
 
@@ -258,18 +258,23 @@ export function getMillGcodeFromOp(settings, opIndex, op, geometry, openGeometry
     }
     reduceCamPaths(camPaths, op.segmentLength * mmToClipperScale);
 
-    // Sort paths so interior features are cut before exterior contours.
-    if (op.orderInsideFirst)
-        sortCamPathsInsideFirst(camPaths);
-
-    // Optimize path order using Genetic Algorithm (TSP) to minimize rapid moves.
-    if (op.optimizePath)
-        optimizePathOrderGA(camPaths, {
-            populationSize: op.gaPopulation,
-            generations: op.gaGenerations,
-            crossoverRate: op.gaCrossoverRate,
-            mutationRate: op.gaMutationRate,
-        });
+    // Optimize path order and/or enforce interior-before-exterior ordering.
+    // When both flags are active, GA runs per depth group so it cannot break
+    // the inside-first constraint (exterior paths are always last).
+    var gaOpts = {
+        populationSize: op.gaPopulation,
+        generations: op.gaGenerations,
+        crossoverRate: op.gaCrossoverRate,
+        mutationRate: op.gaMutationRate,
+    };
+    if (op.orderInsideFirst && op.optimizePath) {
+        optimizePathOrderGAInsideFirst(camPaths, gaOpts);
+    } else {
+        if (op.orderInsideFirst)
+            sortCamPathsInsideFirst(camPaths);
+        if (op.optimizePath)
+            optimizePathOrderGA(camPaths, gaOpts);
+    }
 
     let feedScale = 1;
     if (settings.toolFeedUnits === 'mm/s')
