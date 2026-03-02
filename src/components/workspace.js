@@ -14,13 +14,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { mat2d, mat4, vec3, vec4 } from 'gl-matrix';
+import uuidv4 from 'uuid/v4';
 import React from 'react'
 import { connect } from 'react-redux'
 import ReactDOM from 'react-dom';
 
 import { GlobalStore } from '..';
 import { setCameraAttrs, zoomArea } from '../actions/camera'
-import { selectDocument, toggleSelectDocument, transform2dSelectedDocuments, removeDocumentSelected, cloneDocumentSelected, arrayCloneDocumentSelected } from '../actions/document';
+import { selectDocument, toggleSelectDocument, transform2dSelectedDocuments, removeDocumentSelected, cloneDocumentSelected, arrayCloneDocumentSelected, generateTabsForSelected } from '../actions/document';
+import { operationAddDocuments } from '../actions/operation';
 import { setWorkspaceAttrs } from '../actions/workspace';
 import { setSettingsAttrs } from '../actions/settings';
 
@@ -300,6 +302,10 @@ class FloatingControls extends React.Component {
             arraySpacingX: 10,
             arraySpacingY: 10,
             arrayUseSize: true,
+            showTabGen: false,
+            tabCount: 4,
+            tabWidth: 3,
+            tabHeight: 4,
         }
     }
 
@@ -447,6 +453,54 @@ class FloatingControls extends React.Component {
                 spacingY: spacingY * yDir,
             }));
             this.setState({ showArrayClone: false });
+        }
+
+        this.toggleTabGen = () => {
+            this.setState({ showTabGen: !this.state.showTabGen });
+        }
+
+        this.applyTabGen = () => {
+            const state = GlobalStore().getState();
+            const documents = state.documents;
+            const operations = state.operations;
+
+            // Find selected root docs (not children of other selected)
+            const selectedRoots = documents.filter(d => d.selected).filter((d, idx, arr) => {
+                return !arr.find(i => i.selected && i.children.includes(d.id));
+            });
+
+            // Pre-generate one tab-doc ID per selected root
+            const precomputedIds = {};
+            selectedRoots.forEach(sel => { precomputedIds[sel.id] = uuidv4(); });
+
+            // Create the tab documents
+            this.props.dispatch(generateTabsForSelected({
+                count:     this.state.tabCount,
+                tabWidth:  this.state.tabWidth,
+                tabHeight: this.state.tabHeight,
+                precomputedIds,
+            }));
+
+            // Operation types that support tabs
+            const TAB_OP_TYPES = new Set([
+                'Laser Cut', 'Laser Cut Inside', 'Laser Cut Outside',
+                'Mill Pocket', 'Mill Cut', 'Mill Cut Inside', 'Mill Cut Outside',
+            ]);
+
+            // For each operation that (a) allows tabs and (b) references any of the
+            // selected root docs, add all generated tab docs to its tabDocuments.
+            const selectedRootIds = new Set(selectedRoots.map(s => s.id));
+            const newTabDocIds = Object.values(precomputedIds);
+            if (newTabDocIds.length) {
+                operations.forEach(op => {
+                    if (!TAB_OP_TYPES.has(op.type)) return;
+                    const hasSelectedDoc = op.documents.some(docId => selectedRootIds.has(docId));
+                    if (!hasSelectedDoc) return;
+                    this.props.dispatch(operationAddDocuments(op.id, true, newTabDocIds));
+                });
+            }
+
+            this.setState({ showTabGen: false });
         }
 
         this.toolOptimize = (doc, scale, anchor = 'C') => {
@@ -615,6 +669,7 @@ class FloatingControls extends React.Component {
                                     <ButtonGroup>
                                         <Button bsSize="xsmall" bsStyle="primary" onClick={this.duplicateSelected} title="Duplicate selected (Ctrl+D)"><Icon name="clone" /> Duplicate</Button>
                                         <Button bsSize="xsmall" bsStyle={this.state.showArrayClone ? 'success' : 'primary'} onClick={this.toggleArrayClone} title="Array clone selected into a grid"><Icon name="th" /> Array</Button>
+                                        <Button bsSize="xsmall" bsStyle={this.state.showTabGen ? 'success' : 'warning'} onClick={this.toggleTabGen} title="Generate holding tabs on exterior perimeter"><Icon name="minus" /> Tabs</Button>
                                     </ButtonGroup>
                                     {this.state.showArrayClone && (
                                         <div style={{ marginTop: 4, padding: 4, border: '1px solid #ccc', borderRadius: 3, backgroundColor: '#f9f9f9' }}>
@@ -643,6 +698,30 @@ class FloatingControls extends React.Component {
                                                             <Button bsSize="xsmall" bsStyle="success" onClick={this.applyArrayClone}><Icon name="check" /> Apply</Button>
                                                             {' '}
                                                             <Button bsSize="xsmall" bsStyle="default" onClick={this.toggleArrayClone}><Icon name="times" /></Button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                    {this.state.showTabGen && (
+                                        <div style={{ marginTop: 4, padding: 4, border: '1px solid #e8a200', borderRadius: 3, backgroundColor: '#fffbf0' }}>
+                                            <small style={{ display: 'block', marginBottom: 4, color: '#666' }}>Generates tab rectangles on the exterior perimeter. Drag the new document into an operation&#39;s <b>Tabs</b> section.</small>
+                                            <table style={{ width: '100%', fontSize: '11px' }}>
+                                                <tbody>
+                                                    <tr>
+                                                        <td title="Number of tabs distributed evenly around the perimeter">Count</td>
+                                                        <td><Input value={this.state.tabCount} onChangeValue={v => this.setState({ tabCount: Math.max(1, parseInt(v) || 1) })} type="number" min="1" step="1" /></td>
+                                                        <td title="Tab width along the cut direction (mm)">Width (mm)</td>
+                                                        <td><Input value={this.state.tabWidth} onChangeValue={v => this.setState({ tabWidth: Math.max(0.1, parseFloat(v) || 1) })} type="number" min="0.1" step="0.5" /></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td title="Tab height across the cut path (mm)">Height (mm)</td>
+                                                        <td><Input value={this.state.tabHeight} onChangeValue={v => this.setState({ tabHeight: Math.max(0.1, parseFloat(v) || 1) })} type="number" min="0.1" step="0.5" /></td>
+                                                        <td colSpan="2">
+                                                            <Button bsSize="xsmall" bsStyle="success" onClick={this.applyTabGen}><Icon name="check" /> Apply</Button>
+                                                            {' '}
+                                                            <Button bsSize="xsmall" bsStyle="default" onClick={this.toggleTabGen}><Icon name="times" /></Button>
                                                         </td>
                                                     </tr>
                                                 </tbody>

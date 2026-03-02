@@ -446,6 +446,102 @@ export function documents(state, action) {
             return [...state, ...allClones];
         }
 
+        case 'DOCUMENT_GENERATE_TABS': {
+            let { count, tabWidth, tabHeight, precomputedIds } = action.payload;
+            // Find selected root docs (not children of other selected docs)
+            let selectedRoots = state.filter(d => d.selected).filter((d, index, t) => {
+                return !t.find(i => (i.selected && i.children.includes(d.id)));
+            });
+            if (!selectedRoots.length) return state;
+
+            let newDocs = [];
+            selectedRoots.forEach(sel => {
+                // Compute world bounding box from rawPaths × transform2d across the whole subtree
+                let ids = getSubtreeIds(state, sel.id);
+                let bbox = { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity };
+                ids.forEach(id => {
+                    let doc = state.find(o => o.id === id);
+                    if (!doc || !doc.rawPaths || !doc.transform2d) return;
+                    let [a, b, c, d, tx, ty] = doc.transform2d;
+                    for (let path of doc.rawPaths) {
+                        for (let i = 0; i < path.length - 1; i += 2) {
+                            let px = path[i], py = path[i + 1];
+                            let wx = a * px + c * py + tx;
+                            let wy = b * px + d * py + ty;
+                            bbox.x1 = Math.min(bbox.x1, wx);
+                            bbox.y1 = Math.min(bbox.y1, wy);
+                            bbox.x2 = Math.max(bbox.x2, wx);
+                            bbox.y2 = Math.max(bbox.y2, wy);
+                        }
+                    }
+                });
+
+                if (!isFinite(bbox.x1)) return;
+
+                let W = bbox.x2 - bbox.x1;
+                let H = bbox.y2 - bbox.y1;
+                let perimeter = 2 * (W + H);
+                let tabRects = [];
+
+                for (let i = 0; i < count; i++) {
+                    // Evenly distribute tab centres along the perimeter starting at the bottom-left corner
+                    let p = ((i + 0.5) / count) * perimeter;
+                    let cx, cy, isHorizontal;
+
+                    if (p < W) {
+                        // Bottom edge (y = y1), left → right
+                        cx = bbox.x1 + p;
+                        cy = bbox.y1;
+                        isHorizontal = true;
+                    } else if (p < W + H) {
+                        // Right edge (x = x2), bottom → top
+                        cx = bbox.x2;
+                        cy = bbox.y1 + (p - W);
+                        isHorizontal = false;
+                    } else if (p < 2 * W + H) {
+                        // Top edge (y = y2), right → left
+                        cx = bbox.x2 - (p - W - H);
+                        cy = bbox.y2;
+                        isHorizontal = true;
+                    } else {
+                        // Left edge (x = x1), top → bottom
+                        cx = bbox.x1;
+                        cy = bbox.y2 - (p - 2 * W - H);
+                        isHorizontal = false;
+                    }
+
+                    // Half-extents: tabWidth along edge, tabHeight across edge
+                    let hw = (isHorizontal ? tabWidth  : tabHeight) / 2;
+                    let hh = (isHorizontal ? tabHeight : tabWidth)  / 2;
+                    let rx1 = cx - hw, ry1 = cy - hh;
+                    let rx2 = cx + hw, ry2 = cy + hh;
+
+                    // Closed rectangular rawPath: [x1,y1, x2,y1, x2,y2, x1,y2, x1,y1]
+                    tabRects.push([rx1, ry1, rx2, ry1, rx2, ry2, rx1, ry2, rx1, ry1]);
+                }
+
+                let tabDoc = {
+                    ...DOCUMENT_INITIALSTATE,
+                    id: (precomputedIds && precomputedIds[sel.id]) ? precomputedIds[sel.id] : uuidv4(),
+                    type: 'document',
+                    name: `Tabs (${sel.name})`,
+                    isRoot: true,
+                    children: [],
+                    selected: false,
+                    visible: true,
+                    // Identity transform — rawPaths are already in world (mm) coordinates
+                    transform2d: [1, 0, 0, 1, 0, 0],
+                    rawPaths: tabRects,
+                    strokeColor: [1, 0.5, 0, 1],        // orange outline
+                    fillColor:   [1, 0.5, 0, 0.25],     // semi-transparent orange fill
+                };
+
+                newDocs.push(tabDoc);
+            });
+
+            return [...state, ...newDocs];
+        }
+
         case "DOCUMENT_REMOVE_SELECTED": {
             let ids = [];
             state.filter(d => d.selected).forEach((sel) => { ids = [...ids, ...getSubtreeIds(state, sel.id)]; })
