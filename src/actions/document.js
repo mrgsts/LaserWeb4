@@ -37,8 +37,8 @@ export function arrayCloneDocumentSelected({ rows, columns, spacingX, spacingY }
     return { type: 'DOCUMENT_ARRAY_CLONE_SELECTED', payload: { rows, columns, spacingX, spacingY } };
 }
 
-export function generateTabsForSelected({ count, tabWidth, tabHeight, precomputedIds = null }) {
-    return { type: 'DOCUMENT_GENERATE_TABS', payload: { count, tabWidth, tabHeight, precomputedIds } };
+export function generateTabsForSelected({ count, tabWidth, tabHeight, precomputedIds = null, mouseBites = false, biteSize = 0.5, biteSpacing = 1.0 }) {
+    return { type: 'DOCUMENT_GENERATE_TABS', payload: { count, tabWidth, tabHeight, precomputedIds, mouseBites, biteSize, biteSpacing } };
 }
 
 export function selectDocuments(meta){

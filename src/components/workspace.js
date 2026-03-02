@@ -306,6 +306,9 @@ class FloatingControls extends React.Component {
             tabCount: 4,
             tabWidth: 3,
             tabHeight: 4,
+            tabMouseBites: false,
+            tabBiteSize: 0.5,
+            tabBiteSpacing: 1.0,
         }
     }
 
@@ -475,10 +478,13 @@ class FloatingControls extends React.Component {
 
             // Create the tab documents
             this.props.dispatch(generateTabsForSelected({
-                count:     this.state.tabCount,
-                tabWidth:  this.state.tabWidth,
-                tabHeight: this.state.tabHeight,
+                count:       this.state.tabCount,
+                tabWidth:    this.state.tabWidth,
+                tabHeight:   this.state.tabHeight,
                 precomputedIds,
+                mouseBites:  this.state.tabMouseBites,
+                biteSize:    this.state.tabBiteSize,
+                biteSpacing: this.state.tabBiteSpacing,
             }));
 
             // Operation types that support tabs
@@ -719,6 +725,22 @@ class FloatingControls extends React.Component {
                                                         <td title="Tab height across the cut path (mm)">Height (mm)</td>
                                                         <td><Input value={this.state.tabHeight} onChangeValue={v => this.setState({ tabHeight: Math.max(0.1, parseFloat(v) || 1) })} type="number" min="0.1" step="0.5" /></td>
                                                         <td colSpan="2">
+                                                            <label style={{ fontWeight: 'normal', fontSize: '11px', cursor: 'pointer' }} title="Split each tab into small bite-size segments (mouse bites), leaving gaps the cutter passes through — makes snap-out easy">
+                                                                <input type="checkbox" checked={this.state.tabMouseBites} onChange={e => this.setState({ tabMouseBites: e.target.checked })} />
+                                                                {' '}Mouse Bites
+                                                            </label>
+                                                        </td>
+                                                    </tr>
+                                                    {this.state.tabMouseBites && (
+                                                        <tr>
+                                                            <td title="Width of each uncut bite segment (mm)">Bite (mm)</td>
+                                                            <td><Input value={this.state.tabBiteSize} onChangeValue={v => this.setState({ tabBiteSize: Math.max(0.1, parseFloat(v) || 0.5) })} type="number" min="0.1" step="0.1" /></td>
+                                                            <td title="Centre-to-centre distance between consecutive bites (mm) — must be greater than bite size to leave a gap">Spacing (mm)</td>
+                                                            <td><Input value={this.state.tabBiteSpacing} onChangeValue={v => this.setState({ tabBiteSpacing: Math.max(0.1, parseFloat(v) || 1.0) })} type="number" min="0.1" step="0.1" /></td>
+                                                        </tr>
+                                                    )}
+                                                    <tr>
+                                                        <td colSpan="4" style={{ textAlign: 'right' }}>
                                                             <Button bsSize="xsmall" bsStyle="success" onClick={this.applyTabGen}><Icon name="check" /> Apply</Button>
                                                             {' '}
                                                             <Button bsSize="xsmall" bsStyle="default" onClick={this.toggleTabGen}><Icon name="times" /></Button>

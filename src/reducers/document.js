@@ -447,7 +447,7 @@ export function documents(state, action) {
         }
 
         case 'DOCUMENT_GENERATE_TABS': {
-            let { count, tabWidth, tabHeight, precomputedIds } = action.payload;
+            let { count, tabWidth, tabHeight, precomputedIds, mouseBites, biteSize, biteSpacing } = action.payload;
             // Find selected root docs (not children of other selected docs)
             let selectedRoots = state.filter(d => d.selected).filter((d, index, t) => {
                 return !t.find(i => (i.selected && i.children.includes(d.id)));
@@ -513,11 +513,33 @@ export function documents(state, action) {
                     // Half-extents: tabWidth along edge, tabHeight across edge
                     let hw = (isHorizontal ? tabWidth  : tabHeight) / 2;
                     let hh = (isHorizontal ? tabHeight : tabWidth)  / 2;
-                    let rx1 = cx - hw, ry1 = cy - hh;
-                    let rx2 = cx + hw, ry2 = cy + hh;
 
-                    // Closed rectangular rawPath: [x1,y1, x2,y1, x2,y2, x1,y2, x1,y1]
-                    tabRects.push([rx1, ry1, rx2, ry1, rx2, ry2, rx1, ry2, rx1, ry1]);
+                    if (!mouseBites) {
+                        // Solid tab — one rectangle
+                        let rx1 = cx - hw, ry1 = cy - hh;
+                        let rx2 = cx + hw, ry2 = cy + hh;
+                        // Closed rectangular rawPath: [x1,y1, x2,y1, x2,y2, x1,y2, x1,y1]
+                        tabRects.push([rx1, ry1, rx2, ry1, rx2, ry2, rx1, ry2, rx1, ry1]);
+                    } else {
+                        // Mouse bites — a row of small rectangles spaced along the tab's length.
+                        // Each bite is biteSize wide (along the edge), full tabHeight across.
+                        // Gaps between consecutive bites let the cutter pass through.
+                        let bw = biteSize / 2; // half bite width along the edge
+                        let along = -hw + bw;  // relative offset of first bite centre
+                        let limit  =  hw - bw; // relative offset of last allowed bite centre
+                        while (along <= limit + 1e-9) {
+                            let rx1, ry1, rx2, ry2;
+                            if (isHorizontal) {
+                                rx1 = cx + along - bw;  ry1 = cy - hh;
+                                rx2 = cx + along + bw;  ry2 = cy + hh;
+                            } else {
+                                rx1 = cx - hh;  ry1 = cy + along - bw;
+                                rx2 = cx + hh;  ry2 = cy + along + bw;
+                            }
+                            tabRects.push([rx1, ry1, rx2, ry1, rx2, ry2, rx1, ry2, rx1, ry1]);
+                            along += biteSpacing;
+                        }
+                    }
                 }
 
                 let tabDoc = {
