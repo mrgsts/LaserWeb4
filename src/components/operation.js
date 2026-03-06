@@ -557,7 +557,21 @@ export const OPERATION_FIELDS = {
     hookOperationEnd: { name: 'hookOperationEnd', label: 'Post Op', units: '', input: TagInput('settings.macros') },
     hookPassStart: { name: 'hookPassStart', label: 'Pre Pass', units: '', input: TagInput('settings.macros') },
     hookPassEnd: { name: 'hookPassEnd', label: 'Post Pass', units: '', input: TagInput('settings.macros') },
+
+    // Lead-In / Lead-Out
+    leadIn:        { name: 'leadIn',        label: 'Lead-In',         units: '', input: ToggleInput },
+    leadInShape:   { name: 'leadInShape',   label: 'Lead-In Shape',   units: '', input: EnumInput(['line', 'arc']), condition: op => op.leadIn },
+    leadInLength:  { name: 'leadInLength',  label: 'Lead-In Length',  units: 'mm', input: NumberInput, ...checkPositive, condition: op => op.leadIn },
+    leadInAngle:   { name: 'leadInAngle',   label: 'Lead-In Angle',   units: '°',  input: NumberInput,              condition: op => op.leadIn },
+    leadOut:       { name: 'leadOut',       label: 'Lead-Out',        units: '', input: ToggleInput },
+    leadOutShape:  { name: 'leadOutShape',  label: 'Lead-Out Shape',  units: '', input: EnumInput(['line', 'arc']), condition: op => op.leadOut },
+    leadOutLength: { name: 'leadOutLength', label: 'Lead-Out Length', units: 'mm', input: NumberInput, ...checkPositive, condition: op => op.leadOut },
+    leadOutAngle:  { name: 'leadOutAngle',  label: 'Lead-Out Angle',  units: '°',  input: NumberInput,              condition: op => op.leadOut },
+    leadInside:    { name: 'leadInside',    label: 'Lead Side Inside', units: '', input: ToggleInput, condition: op => op.leadIn || op.leadOut },
+    leadOuterOnly: { name: 'leadOuterOnly', label: 'Outer Contour Only', units: '', input: ToggleInput, condition: op => op.leadIn || op.leadOut },
 };
+
+const LEAD_IN_OUT_FIELDS = ['leadIn', 'leadInShape', 'leadInLength', 'leadInAngle', 'leadOut', 'leadOutShape', 'leadOutLength', 'leadOutAngle', 'leadInside', 'leadOuterOnly'];
 
 export const OPERATION_GROUPS = {
     'Filters': {
@@ -575,9 +589,9 @@ const tabFields = [
 ];
 
 export const OPERATION_TYPES = {
-    'Laser Cut': { allowTabs: true, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'laserPower', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', 'segmentLength', ...OPERATION_GROUPS.Macros.fields] },
-    'Laser Cut Inside': { allowTabs: true, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'laserDiameter', 'laserPower', 'margin', 'cutWidth', 'stepOver', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', 'segmentLength', ...OPERATION_GROUPS.Macros.fields] },
-    'Laser Cut Outside': { allowTabs: true, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'laserDiameter', 'laserPower', 'margin', 'cutWidth', 'stepOver', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', 'segmentLength', ...OPERATION_GROUPS.Macros.fields] },
+    'Laser Cut': { allowTabs: true, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'laserPower', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', 'segmentLength', ...LEAD_IN_OUT_FIELDS, ...OPERATION_GROUPS.Macros.fields] },
+    'Laser Cut Inside': { allowTabs: true, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'laserDiameter', 'laserPower', 'margin', 'cutWidth', 'stepOver', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', 'segmentLength', ...LEAD_IN_OUT_FIELDS, ...OPERATION_GROUPS.Macros.fields] },
+    'Laser Cut Outside': { allowTabs: true, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'laserDiameter', 'laserPower', 'margin', 'cutWidth', 'stepOver', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', 'segmentLength', ...LEAD_IN_OUT_FIELDS, ...OPERATION_GROUPS.Macros.fields] },
     'Laser Fill Path': { allowTabs: false, tabFields: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'lineDistance', 'lineAngle', 'laserPower', 'margin', 'passes', 'passDepth', 'startHeight', 'cutRate', 'useA', 'aAxisDiameter', 'useBlower', ...OPERATION_GROUPS.Macros.fields] },
     'Laser Raster': {
         allowTabs: false, tabFields: false, fields: [
@@ -594,10 +608,10 @@ export const OPERATION_TYPES = {
             ...OPERATION_GROUPS.Filters.fields, ...OPERATION_GROUPS.Macros.fields
         ]
     },
-    'Mill Pocket': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'margin', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'toolDiameter', 'stepOver', 'segmentLength', 'plungeRate', 'cutRate', 'ramp', 'hookOperationStart', 'hookOperationEnd'] },
-    'Mill Cut': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'toolDiameter', 'segmentLength', 'plungeRate', 'cutRate', 'ramp', 'hookOperationStart', 'hookOperationEnd'] },
-    'Mill Cut Inside': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'margin', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'cutWidth', 'toolDiameter', 'stepOver', 'plungeRate', 'cutRate', 'segmentLength', 'ramp', 'hookOperationStart', 'hookOperationEnd'] },
-    'Mill Cut Outside': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'margin', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'cutWidth', 'toolDiameter', 'stepOver', 'plungeRate', 'cutRate', 'segmentLength', 'ramp', 'hookOperationStart', 'hookOperationEnd'] },
+    'Mill Pocket': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'margin', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'toolDiameter', 'stepOver', 'segmentLength', 'plungeRate', 'cutRate', 'ramp', ...LEAD_IN_OUT_FIELDS, 'hookOperationStart', 'hookOperationEnd'] },
+    'Mill Cut': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'toolDiameter', 'segmentLength', 'plungeRate', 'cutRate', 'ramp', ...LEAD_IN_OUT_FIELDS, 'hookOperationStart', 'hookOperationEnd'] },
+    'Mill Cut Inside': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'margin', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'cutWidth', 'toolDiameter', 'stepOver', 'plungeRate', 'cutRate', 'segmentLength', 'ramp', ...LEAD_IN_OUT_FIELDS, 'hookOperationStart', 'hookOperationEnd'] },
+    'Mill Cut Outside': { allowTabs: true, tabFields: true, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'margin', 'toolSpeed', 'millRapidZ', 'millStartZ', 'millEndZ', 'passDepth', 'cutWidth', 'toolDiameter', 'stepOver', 'plungeRate', 'cutRate', 'segmentLength', 'ramp', ...LEAD_IN_OUT_FIELDS, 'hookOperationStart', 'hookOperationEnd'] },
     'Mill V Carve': { allowTabs: false, fields: ['name', 'filterFillColor', 'filterStrokeColor', 'orderInsideFirst', 'optimizePath', 'gaPopulation', 'gaGenerations', 'gaCrossoverRate', 'gaMutationRate', 'direction', 'toolAngle', 'millRapidZ', 'millStartZ', 'toolSpeed', 'passDepth', 'segmentLength', 'plungeRate', 'cutRate', 'hookOperationStart', 'hookOperationEnd'] },
     'Lathe Conv Face/Turn': { skipDocs: true, tabFields: false, fields: ['name', 'latheToolBackSide', 'latheRapidToDiameter', 'latheRapidToZ', 'latheStartZ', 'latheRoughingFeed', 'latheRoughingDepth', 'latheFinishFeed', 'latheFinishDepth', 'latheFinishExtraPasses', 'latheFace', 'latheFaceEndDiameter', 'latheTurnAdd', 'latheTurns', 'hookOperationStart', 'hookOperationEnd'] },
 };

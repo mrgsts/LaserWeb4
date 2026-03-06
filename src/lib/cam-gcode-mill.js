@@ -17,6 +17,7 @@
 
 import { dist, cut, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve, sortCamPathsInsideFirst } from './cam';
 import { optimizePathOrderGA, optimizePathOrderGAInsideFirst } from './ga-path-optimizer';
+import { applyLeadInOutToCamPaths } from './lead-in-out';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
 import { getMachineOriginFromSettings } from './helpers';
 
@@ -258,6 +259,10 @@ export function getMillGcodeFromOp(settings, opIndex, op, geometry, openGeometry
     }
     reduceCamPaths(camPaths, op.segmentLength * mmToClipperScale);
 
+    // Apply lead-in / lead-out before path ordering so the GA uses the
+    // lead-in start point as the effective travel start for each contour.
+    applyLeadInOutToCamPaths(camPaths, op, mmToClipperScale);
+
     // Optimize path order and/or enforce interior-before-exterior ordering.
     // When both flags are active, GA runs per depth group so it cannot break
     // the inside-first constraint (exterior paths are always last).
@@ -275,7 +280,6 @@ export function getMillGcodeFromOp(settings, opIndex, op, geometry, openGeometry
         if (op.optimizePath)
             optimizePathOrderGA(camPaths, gaOpts);
     }
-
     let feedScale = 1;
     if (settings.toolFeedUnits === 'mm/s')
         feedScale = 60;

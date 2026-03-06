@@ -17,6 +17,7 @@
 
 import { dist, cut, fillPath, insideOutside, pocket, reduceCamPaths, separateTabs, vCarve, sortCamPathsInsideFirst } from './cam';
 import { optimizePathOrderGA, optimizePathOrderGAInsideFirst } from './ga-path-optimizer';
+import { applyLeadInOutToCamPaths } from './lead-in-out';
 import { mmToClipperScale, offset, rawPathsToClipperPaths, union } from './mesh';
 import { getGenerator } from "./action2gcode/gcode-generator";
 import { getMachineOriginFromSettings } from './helpers';
@@ -237,6 +238,10 @@ export function getLaserCutGcodeFromOp(settings, opIndex, op, geometry, openGeom
     }
 
     reduceCamPaths(camPaths, op.segmentLength * mmToClipperScale);
+
+    // Apply lead-in / lead-out before path ordering so the GA uses the
+    // lead-in start point as the effective travel start for each contour.
+    applyLeadInOutToCamPaths(camPaths, op, mmToClipperScale);
 
     // Optimize path order and/or enforce interior-before-exterior ordering.
     // When both flags are active, GA runs per depth group so it cannot break

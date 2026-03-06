@@ -75,6 +75,17 @@ export const OPERATION_INITIALSTATE = {
     latheFaceEndDiameter: 0,
     latheTurns: [],
     _docs_visible: true,
+    // Lead-In / Lead-Out
+    leadIn: false,
+    leadInShape: 'line',
+    leadInLength: 2,
+    leadInAngle: 45,
+    leadOut: false,
+    leadOutShape: 'line',
+    leadOutLength: 2,
+    leadOutAngle: 45,
+    leadInside: false,
+    leadOuterOnly: true,
     // Hooks!
     hookOperationStart: '',
     hookOperationEnd: '',

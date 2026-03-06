@@ -34,6 +34,17 @@ This is a fork of the original [LaserWeb4](https://github.com/LaserWeb/LaserWeb4
 - **Duplicate selected object** — A *Duplicate* button has been added to the floating selection toolbar (equivalent to `Ctrl+D`), creating an in-place copy of the selected document(s).
 - **Array Clone** — An *Array* button in the floating toolbar opens an inline panel to create a rectangular grid of copies. Parameters include number of rows and columns, X/Y gap between copies, and a *Gap + Size* toggle to choose between center-to-center or edge-to-edge spacing. Offsets are automatically adjusted to respect the configured machine origin coordinate system.
 
+#### Tab Generation
+- **Holding tabs with optional mouse bites** — The floating toolbar provides a *Tabs* panel that distributes holding tabs evenly around the perimeter of selected closed shapes. Configurable parameters include number of tabs, tab width and height. An optional *Mouse Bites* mode replaces each solid tab with a row of small overlapping circles (drill spots) so the part can be snapped out cleanly after cutting. Tabs are automatically added to all compatible operations (Laser Cut, Mill Cut, etc.) that reference the same documents.
+
+#### Lead-In / Lead-Out
+- **Lead-in and lead-out paths** — Laser Cut and Mill operations now support configurable lead-in and lead-out path segments that are appended to each closed contour toolpath. This prevents burn marks or dwell marks at the cut start/end point by moving the entry and exit away from the seam. Options per operation:
+  - **Lead-In / Lead-Out** — enable independently per operation.
+  - **Shape** — `line` (straight tangential ramp) or `arc` (circular approach).
+  - **Length** — lead segment length in mm.
+  - **Angle** — approach angle in degrees (0° = fully tangential, 90° = radial perpendicular).
+  - **Side** — *Inside* checkbox controls whether the approach comes from inside or outside the contour. Open paths (engraving lines) are left unchanged.
+
 #### Keyboard Shortcuts
 - **Delete key removes selected objects** — Pressing `Delete` or `Backspace` while the workspace has focus now removes the currently selected document(s). The shortcut is suppressed when a text input, number field, or select control is focused to prevent accidental deletions while editing values in the toolbar.
 
