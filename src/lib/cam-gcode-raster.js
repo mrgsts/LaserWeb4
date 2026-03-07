@@ -2,9 +2,10 @@ import { drawDocument } from '../components/workspace'
 import { DrawCommands } from '../draw-commands'
 import { DOCUMENT_INITIALSTATE } from '../reducers/document'
 import RasterToGcode from './lw.raster2gcode/raster-to-gcode';
-import queue from 'queue'
+import queue from 'queue';
 import { promisedImage } from '../components/image-filters.js';
-import { getGenerator } from "./action2gcode/gcode-generator"
+import { getGenerator } from './action2gcode/gcode-generator';
+import { getMachineOriginFromSettings } from './helpers';
 
 const getImageBounds=(t,w,h)=>{
     let tx = (x, y) => t[0] * x + t[2] * y;
@@ -20,6 +21,8 @@ const getImageBounds=(t,w,h)=>{
 
 
 export function getLaserRasterGcodeFromOp(settings, opIndex, op, docsWithImages, showAlert, done, progress, jobIndex, QE_chunk, workers) {
+
+    let { ox, oy, xDir, yDir } = getMachineOriginFromSettings(settings);
 
     let ok = true;
 
@@ -171,6 +174,15 @@ export function getLaserRasterGcodeFromOp(settings, opIndex, op, docsWithImages,
                     canvas.height = h
 
                 let ctx = canvas.getContext('2d')
+
+                    /* Machine-origin Y-flip: when the Y axis is inverted relative to
+                       canvas row order, flip the canvas vertically so the pixel rows
+                       correspond to the correct machine scan direction. */
+                    if (yDir < 0) {
+                        ctx.translate(0, h);
+                        ctx.scale(1, -1);
+                    }
+
                     /* Centering Transform */
                     ctx.translate(w/2,h/2)
                     /* WCS correction */
@@ -195,8 +207,8 @@ export function getLaserRasterGcodeFromOp(settings, opIndex, op, docsWithImages,
                     rapidRate: false,
                     feedRate,
                     offsets: {
-                        X: (docBounds.x1 + docBounds.x2 - w / settings.dpiBitmap * 25.4) / 2 + doc.transform2d[4],
-                        Y: (docBounds.y1 + docBounds.y2 - h / settings.dpiBitmap * 25.4) / 2 + doc.transform2d[5],
+                        X: ((docBounds.x1 + docBounds.x2 - w / settings.dpiBitmap * 25.4) / 2 + doc.transform2d[4] - ox) * xDir,
+                        Y: ((docBounds.y1 + docBounds.y2 - h / settings.dpiBitmap * 25.4) / 2 + doc.transform2d[5] - oy) * yDir,
                     },
                     trimLine: op.trimLine,
                     joinPixel: op.joinPixel,
@@ -259,6 +271,7 @@ export function getLaserRasterGcodeFromOp(settings, opIndex, op, docsWithImages,
 }
 
 export function getLaserRasterMergeGcodeFromOp(settings, documentCacheHolder, opIndex, op, filteredDocIds, showAlert, done, progress, jobIndex, QE_chunk, workers) {
+    let { ox, oy, xDir, yDir } = getMachineOriginFromSettings(settings);
     let bounds = { x1: Number.MAX_VALUE, y1: Number.MAX_VALUE, x2: -Number.MAX_VALUE, y2: -Number.MAX_VALUE };
     let filteredCachedDocs = [];
     for (let cache of documentCacheHolder.cache.values()) {
@@ -283,9 +296,13 @@ export function getLaserRasterMergeGcodeFromOp(settings, documentCacheHolder, op
         let drawCommands = new DrawCommands(gl);
         let perspective = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
         let sx = 2 / (bounds.x2 - bounds.x1);
+        // Apply xDir: flip X in NDC when X axis is inverted.
+        sx *= xDir;
+        let tx = -xDir - sx * bounds.x1;
         let sy = 2 / (bounds.y2 - bounds.y1);
-        let tx = -1 - sx * bounds.x1;
-        let ty = -1 - sy * bounds.y1;
+        // Apply yDir: flip Y in NDC when Y axis is inverted (e.g. TL/TR origins).
+        sy *= yDir;
+        let ty = -yDir - sy * bounds.y1;
         let view = [sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, 1, 0, tx, ty, 0, 1];
         gl.viewport(0, 0, width, height);
         gl.clearColor(1, 1, 1, 1);
