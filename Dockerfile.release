@@ -19,7 +19,7 @@ RUN npm ci --unsafe-perm
 ENV NODE_OPTIONS="--openssl-legacy-provider --no-deprecation"
 
 # Build without minification (UglifyJS doesn't support ES6+)
-RUN npx webpack --progress --colors
+RUN npx webpack --progress
 
 # Override the comm-server's bundled frontend with ALL freshly built files
 RUN cp /app/dist/* /app/node_modules/lw.comm-server/app/

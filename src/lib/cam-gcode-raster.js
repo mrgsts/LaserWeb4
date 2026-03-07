@@ -207,8 +207,15 @@ export function getLaserRasterGcodeFromOp(settings, opIndex, op, docsWithImages,
                     rapidRate: false,
                     feedRate,
                     offsets: {
-                        X: ((docBounds.x1 + docBounds.x2 - w / settings.dpiBitmap * 25.4) / 2 + doc.transform2d[4] - ox) * xDir,
-                        Y: ((docBounds.y1 + docBounds.y2 - h / settings.dpiBitmap * 25.4) / 2 + doc.transform2d[5] - oy) * yDir,
+                        // Pick the near edge for scan start: when xDir/yDir < 0 the 2D
+                        // canvas is NOT flipped in X, so scan always starts at the image
+                        // edge closest to the origin (docBounds.x1 for xDir>=0, docBounds.x2
+                        // for xDir<0).
+                        // When yDir < 0 the 2D canvas IS vertically flipped (ctx.scale(1,-1)),
+                        // so scan row 0 reads image visual-top (high world-Y = docBounds.y2)
+                        // rather than visual-bottom (docBounds.y1).
+                        X: ((xDir >= 0 ? docBounds.x1 : docBounds.x2) + doc.transform2d[4] - ox) * xDir,
+                        Y: ((yDir >= 0 ? docBounds.y1 : docBounds.y2) + doc.transform2d[5] - oy) * yDir,
                     },
                     trimLine: op.trimLine,
                     joinPixel: op.joinPixel,
@@ -295,13 +302,13 @@ export function getLaserRasterMergeGcodeFromOp(settings, documentCacheHolder, op
         let drawCommands = new DrawCommands(gl);
         let perspective = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
         let sx = 2 / (bounds.x2 - bounds.x1);
-        // Apply xDir: flip X in NDC when X axis is inverted.
-        sx *= xDir;
-        let tx = -xDir - sx * bounds.x1;
+        // No xDir/yDir flips in the merge view matrix: the canvas pixel layout
+        // is always left-to-right, bottom-to-top (standard WebGL) regardless of
+        // machine origin.  Direction factors are applied at GCode-output time
+        // via the offset formulas below.
+        let tx = -1 - sx * bounds.x1;
         let sy = 2 / (bounds.y2 - bounds.y1);
-        // Apply yDir: flip Y in NDC when Y axis is inverted (e.g. TL/TR origins).
-        sy *= yDir;
-        let ty = -yDir - sy * bounds.y1;
+        let ty = -1 - sy * bounds.y1;
         let view = [sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, 1, 0, tx, ty, 0, 1];
         gl.viewport(0, 0, width, height);
         gl.clearColor(1, 1, 1, 1);
