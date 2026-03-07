@@ -6,10 +6,10 @@ export const MACHINEPROFILES_INITIALSTATE=((ctx)=>{
     let keys = ctx.keys();
     let values = keys.map(ctx);
     return (Object.assign.apply(null,[{},...values]))
-})(require.context('../data/lw.machines/machines', true, /\.json$/gi))
+})(require.context('../data/lw.machines/machines', true, /\.json$/i))
 
 
-export const machineProfiles = (state = MACHINEPROFILES_INITIALSTATE, action, lock=/^\*/gi) => {
+export const machineProfiles = (state = MACHINEPROFILES_INITIALSTATE, action, lock=/^\*/i) => {
         switch (action.type) {
             case "MACHINEPROFILES_ADD":
                 if (!lock.exec(action.payload.id)) 

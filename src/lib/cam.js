@@ -20,7 +20,17 @@ import { mat3, vec2 } from 'gl-matrix';
 
 import { diff, offset, cPathsToClipperPaths, cPathsToCamPaths, clipperBounds, clipperPathsToCPaths, clipperToCppScale } from './mesh';
 
-require('script-loader!web-cam-cpp');
+// Trigger execution of web-cam-cpp (Emscripten asm.js module).
+// The imports-loader rule in webpack.config.js prepends (in the module factory scope,
+// NOT inside an IIFE so there is no scope shadowing):
+//   var Module = globalThis.__webCamCppModule = {};
+// Emscripten's own `var Module;` is then a same-scope re-declaration (hoisted, no
+// re-initialization).  Its `if(!Module)` guard is truthy so it populates THAT SAME
+// object with ccall/_malloc/etc.  After require() returns, __webCamCppModule is the
+// fully-initialized C++ Module.  Works in both main thread (globalThis === window) and
+// Web Workers (globalThis === self).
+require('web-cam-cpp');
+const Module = globalThis.__webCamCppModule;
 
 export function dist(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));

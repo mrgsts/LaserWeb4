@@ -20,6 +20,17 @@
 import ClipperLib from 'clipper-lib';
 import SweepContext from 'poly2tri/src/sweepcontext';
 
+// Lazy accessor for the Emscripten web-cam-cpp Module.
+// mesh.js is loaded before cam.js (which triggers require('web-cam-cpp')),
+// so we must read the reference at call-time, not at module-load time.
+function getModule() {
+    const mod = globalThis.__webCamCppModule;
+    if (!mod || typeof mod._malloc !== 'function') {
+        throw new Error('web-cam-cpp Module not initialized. Ensure require("web-cam-cpp") has been called.');
+    }
+    return mod;
+}
+
 export const inchToClipperScale = 1270000000;
 export const mmToClipperScale = inchToClipperScale / 25.4; // 50000000;
 export const clipperToCppScale = 1 / 128; // Prevent overflow for coordinates up to ~1000 mm
@@ -266,6 +277,7 @@ export function triangulateRawPaths(rawPaths) {
 
 // Convert Clipper paths to C. Returns [double** cPaths, int cNumPaths, int* cPathSizes].
 export function clipperPathsToCPaths(memoryBlocks, clipperPaths) {
+    const Module = getModule();
     let doubleSize = 8;
 
     let cPaths = Module._malloc(clipperPaths.length * 4);
@@ -302,6 +314,7 @@ export function clipperPathsToCPaths(memoryBlocks, clipperPaths) {
 // Convert C paths to Clipper paths. double**& cPathsRef, int& cNumPathsRef, int*& cPathSizesRef
 // Each point has X, Y (stride = 2).
 export function cPathsToClipperPaths(memoryBlocks, cPathsRef, cNumPathsRef, cPathSizesRef) {
+    const Module = getModule();
     let cPaths = Module.HEAPU32[cPathsRef >> 2];
     memoryBlocks.push(cPaths);
     let cPathsBase = cPaths >> 2;
@@ -337,6 +350,7 @@ export function cPathsToClipperPaths(memoryBlocks, cPathsRef, cNumPathsRef, cPat
 // Convert C paths to array of CamPath. double**& cPathsRef, int& cNumPathsRef, int*& cPathSizesRef
 // Each point has X, Y, Z (stride = 3).
 export function cPathsToCamPaths(memoryBlocks, cPathsRef, cNumPathsRef, cPathSizesRef) {
+    const Module = getModule();
     let cPaths = Module.HEAPU32[cPathsRef >> 2];
     memoryBlocks.push(cPaths);
     let cPathsBase = cPaths >> 2;

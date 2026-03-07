@@ -64,8 +64,13 @@ export function getGcode(settings, documents, operations, documentCacheHolder, s
             if (g !== false) { gcode[opIndex]=g; };  cb();
         }
 
-        let invokeWebWorker = (ww, props, cb, jobIndex) => {
-            let peasant = new ww();
+        let invokeWebWorker = (peasant, props, cb, jobIndex) => {
+            peasant.onerror = (e) => {
+                const detail = e.filename ? ` (${e.filename}:${e.lineno})` : '';
+                showAlert('Worker error: ' + (e.message || String(e)) + detail, 'danger');
+                console.error('Worker error event:', e);
+                QE.end();
+            };
             peasant.onmessage = (e) => {
                 let data = JSON.parse(e.data)
                 if (data.event == 'onDone') {
@@ -96,8 +101,7 @@ export function getGcode(settings, documents, operations, documentCacheHolder, s
                 let filteredDocIds = [];
                 let docsWithImages = [];
 
-                let preflightWorker = require('worker-loader!./workers/cam-preflight.js');
-                let preflight = new preflightWorker()
+                let preflight = new Worker(new URL('./workers/cam-preflight.js', import.meta.url))
                 preflight.onmessage = (e) => {
                     let data = e.data;
                     if (data.event == 'onDone') {
@@ -133,7 +137,7 @@ export function getGcode(settings, documents, operations, documentCacheHolder, s
 
                     if (op.type === 'Laser Cut' || op.type === 'Laser Cut Inside' || op.type === 'Laser Cut Outside' || op.type === 'Laser Fill Path') {
 
-                        invokeWebWorker(require('worker-loader!./workers/cam-lasercut.js'), { settings, opIndex, op, geometry, openGeometry, tabGeometry }, cb, jobIndex)
+                        invokeWebWorker(new Worker(new URL('./workers/cam-lasercut.js', import.meta.url)), { settings, opIndex, op, geometry, openGeometry, tabGeometry }, cb, jobIndex)
 
                     } else if (op.type === 'Laser Raster') {
 
@@ -145,11 +149,11 @@ export function getGcode(settings, documents, operations, documentCacheHolder, s
 
                     } else if (op.type.substring(0, 5) === 'Mill ') {
 
-                        invokeWebWorker(require('worker-loader!./workers/cam-mill.js'), { settings, opIndex, op, geometry, openGeometry, tabGeometry }, cb, jobIndex)
+                        invokeWebWorker(new Worker(new URL('./workers/cam-mill.js', import.meta.url)), { settings, opIndex, op, geometry, openGeometry, tabGeometry }, cb, jobIndex)
 
                     } else if (op.type.substring(0, 6) === 'Lathe ') {
 
-                        invokeWebWorker(require('worker-loader!./workers/cam-lathe.js'), { settings, opIndex, op, geometry, openGeometry, tabGeometry }, cb, jobIndex)
+                        invokeWebWorker(new Worker(new URL('./workers/cam-lathe.js', import.meta.url)), { settings, opIndex, op, geometry, openGeometry, tabGeometry }, cb, jobIndex)
 
                     } else {
                         showAlert("Unknown operation " + op.type, 'warning')

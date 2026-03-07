@@ -48,6 +48,10 @@ This is a fork of the original [LaserWeb4](https://github.com/LaserWeb/LaserWeb4
 #### Keyboard Shortcuts
 - **Delete key removes selected objects** — Pressing `Delete` or `Backspace` while the workspace has focus now removes the currently selected document(s). The shortcut is suppressed when a text input, number field, or select control is focused to prevent accidental deletions while editing values in the toolbar.
 
+#### Build System Upgrade
+- **Webpack 2 → Webpack 5 migration** — The build toolchain has been upgraded from webpack 2.2 to webpack 5.105, webpack-dev-server 2 to 5.x, and Babel 6 to Babel 7. All source code incompatibilities have been fixed:
+- **Vulnerability reduction:** Package audit vulnerabilities reduced from 80 to 11 via dependency upgrades. Remaining issues are unrelated to build/dev toolchain (bootstrap XSS, legacy packages).
+
 ---
 
 This repository is a "development environment" - and no regular user would have to touch this at all (dont download the repo from here, use the Download links below)

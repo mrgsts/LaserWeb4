@@ -16,9 +16,8 @@ export const MATERIALDB_SCHEMA = require("../data/lw.materials/material-database
 import { confirm } from '../components/laserweb'
 import stringify from 'json-stringify-pretty-compact';
 
-import Ajv from 'ajv';
+import Ajv from 'ajv-draft-04';
 const ajv = new Ajv();
-      ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
 
 export const validate = ajv.compile(MATERIALDB_SCHEMA);
 

@@ -32,7 +32,7 @@ class About extends React.Component {
         if (this.props.settings.__selectedProfile && this.props.profiles.hasOwnProperty(this.props.settings.__selectedProfile)){
           let aboutFile=this.props.profiles[this.props.settings.__selectedProfile].machineAbout
           if (aboutFile) {
-            machineAbout=<div dangerouslySetInnerHTML={{__html: marked.parse(require('raw-loader!../data/lw.machines/machines/'+aboutFile))}}></div>
+            machineAbout=<div dangerouslySetInnerHTML={{__html: marked.parse(require('../data/lw.machines/machines/'+aboutFile))}}></div>
           }
         }
 
