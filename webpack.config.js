@@ -9,7 +9,7 @@ var dist_path = path.resolve('./dist');
 module.exports = {
     context: src_path,
     entry: [
-        'webpack-dev-server/client?http://0.0.0.0:8080', 'webpack/hot/only-dev-server', 'babel-polyfill', './index.js'
+        'webpack-dev-server/client?http://0.0.0.0:8080', 'webpack/hot/only-dev-server', '@babel/polyfill', './index.js'
     ],
     output: {
         path: dist_path,
@@ -19,11 +19,25 @@ module.exports = {
         loaders: [
             {
                 test: /\.js$/,
-                exclude: /node_modules/,
+                // Exclude node_modules except `marked`, which ships modern class-field
+                // syntax in its UMD build and needs to be transpiled by Babel 7.
+                exclude: function(modulePath) {
+                    return /node_modules/.test(modulePath) &&
+                           !/node_modules[/\\]marked/.test(modulePath);
+                },
                 loader: 'babel-loader',
                 query: {
-                    presets: ['react'],
-                    plugins: ['transform-es2015-destructuring', 'transform-es2015-parameters', 'transform-object-rest-spread', 'transform-es2015-modules-commonjs', 'react-hot-loader/babel']
+                    presets: ['@babel/preset-react'],
+                    plugins: [
+                        '@babel/plugin-transform-destructuring',
+                        '@babel/plugin-transform-parameters',
+                        '@babel/plugin-proposal-object-rest-spread',
+                        '@babel/plugin-transform-modules-commonjs',
+                        '@babel/plugin-proposal-class-properties',
+                        '@babel/plugin-transform-private-methods',
+                        '@babel/plugin-transform-optional-chaining',
+                        'react-hot-loader/babel'
+                    ]
                 }
             }, {
                 test: /\.css$/,
