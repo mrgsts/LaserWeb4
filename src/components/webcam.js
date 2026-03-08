@@ -244,7 +244,7 @@ VideoDeviceField = connect(null, (dispatch => { return { dispatch } }))(VideoDev
 VideoResolutionField = connect(null, (dispatch => { return { dispatch } }))(VideoResolutionField);
 VideoPort = connect(state=>({settings: state.settings}))(VideoPort)
 
-export const ArMarker=require('aruco-marker');
+import { arucoToSVGString } from 'aruco-marker';
 
 const randomIntFromInterval=(min,max)=>{
     return Math.floor(Math.random()*(max-min+1)+min);
@@ -261,8 +261,7 @@ export class ArucoMarker extends React.Component {
         const rand=()=>{this.setState({number: randomIntFromInterval(0,1024)})}
         const setNumber=(e)=>{this.setState({number: e.target.value})}
         const popupMarker=(e)=>{
-            let myMarker = new ArMarker(this.state.number);
-            let svg=myMarker.toSVG('500px');
+            let svg=arucoToSVGString(this.state.number, '500px');
             openDataWindow(svg,'image/svg+xml','arucomarker')
         }
 

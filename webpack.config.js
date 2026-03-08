@@ -19,6 +19,9 @@ module.exports = {
             // react-draggable v2.x that uses React.PropTypes (removed in React 16).
             // Redirect to a compat shim that injects prop-types first.
             '@bokuweb/react-draggable-custom': path.resolve(__dirname, 'src/compat/react-draggable-custom-compat.js'),
+            // marked@16+ exports field causes webpack 5 to pick the ESM build (marked.esm.js)
+            // which uses bare `exports` — undefined in browser ESM context. Force the UMD build.
+            'marked': path.resolve(__dirname, 'node_modules/marked/lib/marked.umd.js'),
         },
         fallback: {
             // Emscripten-compiled web-cam-cpp references fs/path but doesn't use them in browser

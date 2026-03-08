@@ -172,12 +172,12 @@ export function getGcode(settings, documents, operations, documentCacheHolder, s
     QE.chunk = 100 / QE.total
 
     progress(0)
-    QE.on('success', (result, job) => {
+    QE.addEventListener('success', (evt) => {
         jobIndex++
         let p = parseInt(jobIndex * QE.chunk)
         progress(p);
     })
-    QE.on('end', () => {
+    QE.addEventListener('end', () => {
         workers.forEach((ww) => {
             ww.terminate();
         })
