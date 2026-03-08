@@ -48,9 +48,24 @@ This is a fork of the original [LaserWeb4](https://github.com/LaserWeb/LaserWeb4
 #### Keyboard Shortcuts
 - **Delete key removes selected objects** — Pressing `Delete` or `Backspace` while the workspace has focus now removes the currently selected document(s). The shortcut is suppressed when a text input, number field, or select control is focused to prevent accidental deletions while editing values in the toolbar.
 
-#### Build System Upgrade
-- **Webpack 2 → Webpack 5 migration** — The build toolchain has been upgraded from webpack 2.2 to webpack 5.105, webpack-dev-server 2 to 5.x, and Babel 6 to Babel 7. All source code incompatibilities have been fixed:
-- **Vulnerability reduction:** Package audit vulnerabilities reduced from 80 to 11 via dependency upgrades. Remaining issues are unrelated to build/dev toolchain (bootstrap XSS, legacy packages).
+#### Build System & Framework Upgrade
+
+- **Webpack 2 → Webpack 5 migration** — The build toolchain has been upgraded from webpack 2.2 to webpack 5.105, webpack-dev-server 2 to 5.x, and Babel 6 to Babel 7. All source code incompatibilities have been fixed.
+- **Vulnerability reduction** — Package audit vulnerabilities reduced from 80 to 11 via dependency upgrades. Remaining issues are unrelated to the build/dev toolchain (bootstrap XSS, legacy packages).
+
+- **React 15 → React 16** — All components have been migrated to React 16.14.0 (LTS). Breaking changes addressed:
+  - `React.PropTypes` removed — replaced with the standalone `prop-types` package across all source files (`capture.js`, `document-cache.js`, `get-bounds.js`, `lib/Pointable.js`).
+  - `React.createClass` removed — converted to functional components or ES6 class components.
+  - Deprecated lifecycle methods (`componentWillMount`, `componentWillReceiveProps`, `componentWillUpdate`) renamed with the `UNSAFE_` prefix across 11 component files (23 occurrences).
+  - `react-draggable` upgraded from 2.2.6 to 4.4.6 (React 16 compatible).
+  - `@bokuweb/react-draggable-custom` (used internally by `react-rnd`) is a pre-bundled legacy fork that references the removed `React.PropTypes`. A webpack alias redirects it through a compatibility shim (`src/compat/react-draggable-custom-compat.js`) that injects `prop-types` before the old bundle executes.
+
+- **Bootstrap 3 → Bootstrap 5** — The UI framework has been upgraded from Bootstrap 3 to Bootstrap 5.3 + React-Bootstrap 2.x. All components have been updated:
+  - Class names migrated (`btn-default` → `btn-secondary`, `btn-xs` → `btn-sm`, `pull-right` → `float-end`, `panel`/`well` → `card`, `label` → `badge`, `glyphicons` → Font Awesome, etc.).
+  - Grid system updated to Bootstrap 5 (`container-fluid`, `row`, `col-*` classes).
+  - React-Bootstrap component API updated (`<Accordion>`, `<Alert>`, `<Badge>`, `<Button>`, `<ButtonGroup>`, `<ButtonToolbar>`, `<Col>`, `<Collapse>`, `<Form>`, `<InputGroup>`, `<Modal>`, `<ProgressBar>`, `<Row>`, `<Table>`).
+  - Inline `style` props corrected for React 16 (`class` → `className`, boolean `is` attribute removed, invalid HTML elements such as `<heading>` replaced).
+  - jQuery dependency removed from component code (Bootstrap 5 no longer requires jQuery).
 
 ---
 
