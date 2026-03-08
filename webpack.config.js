@@ -14,6 +14,12 @@ module.exports = {
         filename: 'index.js'
     },
     resolve: {
+        alias: {
+            // react-rnd@4.x depends on @bokuweb/react-draggable-custom, a fork of
+            // react-draggable v2.x that uses React.PropTypes (removed in React 16).
+            // Redirect to a compat shim that injects prop-types first.
+            '@bokuweb/react-draggable-custom': path.resolve(__dirname, 'src/compat/react-draggable-custom-compat.js'),
+        },
         fallback: {
             // Emscripten-compiled web-cam-cpp references fs/path but doesn't use them in browser
             "fs": false,

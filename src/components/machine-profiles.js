@@ -1,6 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { FormGroup, FormControl, ControlLabel, Button, InputGroup, Glyphicon, ButtonGroup, ButtonToolbar} from 'react-bootstrap'
+import { Form, Button, InputGroup, ButtonGroup, ButtonToolbar} from 'react-bootstrap'
+import Icon from './font-awesome';
 
 import { addMachineProfile, delMachineProfileId } from '../actions/settings';
 import { importMaterialDatabase } from '../actions/material-database';
@@ -8,11 +9,9 @@ import { importMaterialDatabase } from '../actions/material-database';
 import stringify from 'json-stringify-pretty-compact';
 import slug from 'slug'
 
-import Icon from './font-awesome';
-
 import { alert, prompt, confirm} from './laserweb';
-
 import CommandHistory from '../components/command-history'
+
 import { validate } from '../reducers/material-database'
 
 class MachineProfile extends React.Component {
@@ -23,8 +22,6 @@ class MachineProfile extends React.Component {
         this.handleApply.bind(this);
         this.handleSelect.bind(this);
         this.handleInput.bind(this);
-        this.handleSave.bind(this);
-        
         let selected = this.props.settings.__selectedProfile || "";
         
         this.state={selected: selected , newLabel: '', newSlug:''}
@@ -115,37 +112,35 @@ class MachineProfile extends React.Component {
         return (
             
                 <div>
-                <FormGroup controlId="formControlsSelect">
+                <Form.Group controlId="formControlsSelect">
                     <h5>Apply predefined machine profile</h5>
                     {this.state.selected ? (<small>Machine Id: <code>{this.state.selected}</code></small>):undefined}
-                    <FormControl componentClass="select" onChange={(e)=>{this.handleSelect(e)}} value={this.state.selected} ref="select" className="full-width">
+                    <Form.Select onChange={(e)=>{this.handleSelect(e)}} value={this.state.selected} ref="select" className="full-width">
                       <option value="">Select a Machine Profile</option>
                       {profileOptions}
-                    </FormControl>
+                    </Form.Select>
                     
                     <ButtonGroup>
-                        <Button bsClass="btn btn-xs btn-info" onClick={(e)=>{this.handleApply(e)}} disabled={disabledApply} title="Applies selected profile"><Icon name="share" /> Apply</Button>
-                        <Button bsClass="btn btn-xs btn-warning" onClick={(e)=>{this.handleSave(e)}} title="Updates selected profile with current configuration" disabled={disabledDelete}><Icon name="pencil" /> Update</Button>
-                        <Button bsClass="btn btn-xs btn-danger" onClick={(e)=>{this.handleDelete(e)}} title="Delete selected profile" disabled={disabledDelete}><Glyphicon glyph="trash" /> Delete</Button>
+                        <Button className="btn btn-sm btn-info" onClick={(e)=>{this.handleApply(e)}} disabled={disabledApply} title="Applies selected profile"><Icon name="share" /> Apply</Button>
+                        <Button className="btn btn-sm btn-warning" onClick={(e)=>{this.handleSave(e)}} title="Updates selected profile with current configuration" disabled={disabledDelete}><Icon name="pencil" /> Update</Button>
+                        <Button className="btn btn-sm btn-danger" onClick={(e)=>{this.handleDelete(e)}} title="Delete selected profile" disabled={disabledDelete}><Icon name="trash" /> Delete</Button>
                     </ButtonGroup>
-                     <small className="help-block">Use this dialog to apply predefined machine settings. This settings will override current settings. Use with caution.</small>
+                     <small className="form-text text-muted">Use this dialog to apply predefined machine settings. This settings will override current settings. Use with caution.</small>
                     {description}
-                    </FormGroup>
+                    </Form.Group>
                     
-                    <FormGroup controlId="formControlsAppend">
+                    <Form.Group controlId="formControlsAppend">
                    
                     <h5>New profile</h5>
                     {this.state.newSlug ? (<small>Machine Id: <code>{this.state.newSlug}</code></small>):undefined}
                      <InputGroup>
                         
-                        <FormControl type="text" onChange={(e)=>{this.handleInput(e)}} ref="newLabel" value={this.state.newLabel}/>
-                        <InputGroup.Button>
-                        <Button bsClass="btn btn-success" disabled={!this.state.newLabel.trim().length} onClick={(e)=>{this.handleAppend(e)}}><Glyphicon glyph="plus-sign" /></Button>
-                        </InputGroup.Button>
+                        <Form.Control type="text" onChange={(e)=>{this.handleInput(e)}} ref="newLabel" value={this.state.newLabel}/>
+                        <Button variant="success" disabled={!this.state.newLabel.trim().length} onClick={(e)=>{this.handleAppend(e)}}><Icon name="plus" /></Button>
                      </InputGroup>
                      
-                    <small className="help-block">Use this dialog to add the current settings to a new profile.</small>
-                </FormGroup>
+                    <small className="form-text text-muted">Use this dialog to add the current settings to a new profile.</small>
+                </Form.Group>
                 </div>
             
             

@@ -1,7 +1,7 @@
 import React from 'react'
 import { connect } from 'react-redux';
 
-import { PanelGroup, Panel, Tooltip, OverlayTrigger, FormControl, InputGroup, ControlLabel, FormGroup, ButtonGroup, Label, Collapse, Badge, ButtonToolbar, Button, Glyphicon } from 'react-bootstrap';
+import { Accordion, Tooltip, OverlayTrigger, Form, InputGroup, ButtonGroup, Badge, Collapse, ButtonToolbar, Button } from 'react-bootstrap';
 import { Input, TextField, NumberField, ToggleField, SelectField } from './forms';
 import { runStatus } from './jog.js';
 import { setSettingsAttrs } from '../actions/settings';
@@ -689,19 +689,24 @@ class Com extends React.Component {
 
         return (
             <div style={{paddingTop: 2}}>
-                <PanelGroup>
-                    <Panel collapsible header="Server Connection" bsStyle="primary" eventKey="1" defaultExpanded={false}>
+                <Accordion alwaysOpen defaultActiveKey={["2"]}>
+                    <Accordion.Item eventKey="1">
+                        <Accordion.Header>Server Connection</Accordion.Header>
+                        <Accordion.Body>
                         <TextField {...{ object: settings, field: 'comServerIP', setAttrs: setSettingsAttrs, description: 'Server IP' }} />
 			<div className="toggleField">
                             <ToggleField {...{ object: settings, field: 'comServerSecure', setAttrs: setSettingsAttrs, description: 'Secure connection' }} />
                         </div>
                         <ButtonGroup>
-                            <Button id="connectS" bsClass="btn btn-xs btn-info" onClick={(e)=>{this.handleConnectServer(e)}}><Icon name="share" /> Connect</Button>
-                            <Button id="disconnectS" bsClass="btn btn-xs btn-danger" onClick={(e)=>{this.handleDisconnectServer(e)}}><Glyphicon glyph="trash" /> Disconnect</Button>
+                            <Button id="connectS" className="btn btn-sm btn-info" onClick={(e)=>{this.handleConnectServer(e)}}><Icon name="share" /> Connect</Button>
+                            <Button id="disconnectS" className="btn btn-sm btn-danger" onClick={(e)=>{this.handleDisconnectServer(e)}}><Icon name="trash" /> Disconnect</Button>
                         </ButtonGroup>
-                    </Panel>
+                        </Accordion.Body>
+                    </Accordion.Item>
 
-                    <Panel collapsible header="Machine Connection" bsStyle="primary" eventKey="2" defaultExpanded={true}>
+                    <Accordion.Item eventKey="2">
+                        <Accordion.Header>Machine Connection</Accordion.Header>
+                        <Accordion.Body>
                         <SelectField {...{ object: settings, field: 'connectVia', setAttrs: setSettingsAttrs, data: this.getComInterfacesWithFluidNC(), defaultValue: '', description: 'Machine Connection', selectProps: { clearable: false } }} />
                         <Collapse in={settings.connectVia == 'USB'}>
                             <div>
@@ -721,11 +726,12 @@ class Com extends React.Component {
                             </div>
                         </Collapse>
                         <ButtonGroup>
-                            <Button id="connect" bsClass="btn btn-xs btn-info" onClick={(e)=>{this.handleConnectMachine(e)}}><Icon name="share" /> Connect</Button>
-                            <Button id="disconnect" bsClass="btn btn-xs btn-danger" onClick={(e)=>{this.handleDisconnectMachine(e)}}><Glyphicon glyph="trash" /> Disconnect</Button>
+                            <Button id="connect" className="btn btn-sm btn-info" onClick={(e)=>{this.handleConnectMachine(e)}}><Icon name="share" /> Connect</Button>
+                            <Button id="disconnect" className="btn btn-sm btn-danger" onClick={(e)=>{this.handleDisconnectMachine(e)}}><Icon name="trash" /> Disconnect</Button>
                         </ButtonGroup>
-                    </Panel>
-                </PanelGroup>
+                        </Accordion.Body>
+                    </Accordion.Item>
+                </Accordion>
             </div>
         )
 

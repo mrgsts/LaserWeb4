@@ -319,7 +319,7 @@ class FloatingControls extends React.Component {
         return getMachineOrigin(s.machineOrigin, machineX, machineY, s.machineWidth, s.machineHeight, s.machineOriginInvertX, s.machineOriginInvertY);
     }
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
 
         this.linkScaleChanged = e => {
             this.setState({ linkScale: e.target.checked });
@@ -553,10 +553,10 @@ class FloatingControls extends React.Component {
                         <tr>
                             <td><Icon name="gear" /></td><td colSpan="7" >
                                 <ButtonGroup>
-                                    <Button bsSize="xs" bsStyle="warning" onClick={(e) => this.toolOptimize(doc, this.props.settings.machineBeamDiameter, this.props.settings.toolImagePosition)}><Icon name="picture-o" /> Raster Opt.</Button>
-                                    <Button bsSize="xs" bsStyle="danger" onClick={(e) => this.toolOptimize(doc, null, this.props.settings.toolImagePosition)}><Icon name="undo" /></Button>
+                                    <Button size="sm" variant="warning" onClick={(e) => this.toolOptimize(doc, this.props.settings.machineBeamDiameter, this.props.settings.toolImagePosition)}><Icon name="picture-o" /> Raster Opt.</Button>
+                                    <Button size="sm" variant="danger" onClick={(e) => this.toolOptimize(doc, null, this.props.settings.toolImagePosition)}><Icon name="undo" /></Button>
                                 </ButtonGroup>
-                                &nbsp;<ImageEditorButton bsSize="xs"><Icon name="code" /> Filters/Trace</ImageEditorButton>
+                                &nbsp;<ImageEditorButton size="sm"><Icon name="code" /> Filters/Trace</ImageEditorButton>
                             </td>
                         </tr>
                     </tfoot>
@@ -621,26 +621,26 @@ class FloatingControls extends React.Component {
                                     <table>
                                     <tbody>
                                     <tr>
-                                    <td><button className="btn btn-xs" onClick={ e => { this.setZeroX(true); this.setZeroY(false); } } title="Align northwest of origin">&#x2198;</button></td>
-                                    <td><button className="btn btn-xs" onClick={ e => this.setZeroY(false) } title="Align north of origin">&#x2193;</button></td>
-                                    <td><button className="btn btn-xs" onClick={ e => { this.setZeroX(false); this.setZeroY(false); } } title="Align northeast of origin">&#x2199;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => { this.setZeroX(true); this.setZeroY(false); } } title="Align northwest of origin">&#x2198;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => this.setZeroY(false) } title="Align north of origin">&#x2193;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => { this.setZeroX(false); this.setZeroY(false); } } title="Align northeast of origin">&#x2199;</button></td>
                                     </tr>
                                     <tr>
-                                    <td><button className="btn btn-xs" onClick={ e => this.setZeroX(true) } title="Align west of origin">&#x2192;</button></td>
-                                    <td><button className="btn btn-xs" onClick={ e => this.setCenterXY() } title="Center on origin">+</button></td>
-                                    <td><button className="btn btn-xs" onClick={ e => this.setZeroX(false) } title="Align east of origin">&#x2190;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => this.setZeroX(true) } title="Align west of origin">&#x2192;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => this.setCenterXY() } title="Center on origin">+</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => this.setZeroX(false) } title="Align east of origin">&#x2190;</button></td>
                                     </tr>
                                     <tr>
-                                    <td><button className="btn btn-xs" onClick={ e => { this.setZeroX(true); this.setZeroY(true); } } title="Align southwest of origin">&#x2197;</button></td>
-                                    <td><button className="btn btn-xs" onClick={ e => this.setZeroY(true) } title="Align south of origin">&#x2191;</button></td>
-                                    <td><button className="btn btn-xs" onClick={ e => { this.setZeroX(false); this.setZeroY(true); } } title="Align southeast of origin">&#x2196;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => { this.setZeroX(true); this.setZeroY(true); } } title="Align southwest of origin">&#x2197;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => this.setZeroY(true) } title="Align south of origin">&#x2191;</button></td>
+                                    <td><button className="btn btn-sm" onClick={ e => { this.setZeroX(false); this.setZeroY(true); } } title="Align southeast of origin">&#x2196;</button></td>
                                     </tr>
                                     </tbody>
                                     </table>
                                 </td>
                             </tr>
                             <tr>
-                                <td><span className="label label-danger">X</span></td>
+                                <td><span className="badge bg-danger">X</span></td>
                                 <td><Input value={round(bounds.x1)} onChangeValue={this.setMinX} type="number" step="any" tabIndex="1" /></td>
                                 <td><Input value={round((bounds.x1 + bounds.x2) * .5)} onChangeValue={this.setCenterX} type="number" step="any" tabIndex="3" /></td>
                                 <td><Input value={round(bounds.x2)} type="number" onChangeValue={this.setMaxX} step="any" tabIndex="5" /></td>
@@ -650,18 +650,18 @@ class FloatingControls extends React.Component {
                                 </td>
                                 <td rowSpan={2}><Input value={round(this.state.degrees)} onChangeValue={this.setDegrees} type="number" step="any" tabIndex="10" /><br />
                                     <ButtonGroup>
-                                        <Button bsSize="xsmall" onClick={e => this.rotate(e, false)} bsStyle="info"><Icon fw name="rotate-left"  /></Button>
-                                        <Button bsSize="xsmall" onClick={e => this.rotate(e, true )} bsStyle="info"><Icon fw name="rotate-right" /></Button>
+                                        <Button size="sm" onClick={e => this.rotate(e, false)} variant="info"><Icon fw name="rotate-left"  /></Button>
+                                        <Button size="sm" onClick={e => this.rotate(e, true )} variant="info"><Icon fw name="rotate-right" /></Button>
                                     </ButtonGroup>
                                     <br />
                                     <ButtonGroup>
-                                        <Button bsSize="xsmall" onClick={e => this.flipTopBorrom()} bsStyle="info"><Icon fw name="arrows-v" /></Button>
-                                        <Button bsSize="xsmall" onClick={e => this.flipLeftRight()} bsStyle="info"><Icon fw name="arrows-h" /></Button>
+                                        <Button size="sm" onClick={e => this.flipTopBorrom()} variant="info"><Icon fw name="arrows-v" /></Button>
+                                        <Button size="sm" onClick={e => this.flipLeftRight()} variant="info"><Icon fw name="arrows-h" /></Button>
                                     </ButtonGroup>
                                 </td>
                             </tr>
                             <tr>
-                                <td><span className="label label-success">Y</span></td>
+                                <td><span className="badge bg-success">Y</span></td>
                                 <td><Input value={round(bounds.y1)} onChangeValue={this.setMinY} type="number" step="any" tabIndex="2" /></td>
                                 <td><Input value={round((bounds.y1 + bounds.y2) * .5)} onChangeValue={this.setCenterY} type="number" step="any" tabIndex="4" /></td>
                                 <td><Input value={round(bounds.y2)} type="number" onChangeValue={this.setMaxY} step="any" tabIndex="6" /></td>
@@ -673,9 +673,9 @@ class FloatingControls extends React.Component {
                             <tr>
                                 <td colSpan="8">
                                     <ButtonGroup>
-                                        <Button bsSize="xsmall" bsStyle="primary" onClick={this.duplicateSelected} title="Duplicate selected (Ctrl+D)"><Icon name="clone" /> Duplicate</Button>
-                                        <Button bsSize="xsmall" bsStyle={this.state.showArrayClone ? 'success' : 'primary'} onClick={this.toggleArrayClone} title="Array clone selected into a grid"><Icon name="th" /> Array</Button>
-                                        <Button bsSize="xsmall" bsStyle={this.state.showTabGen ? 'success' : 'warning'} onClick={this.toggleTabGen} title="Generate holding tabs on exterior perimeter"><Icon name="minus" /> Tabs</Button>
+                                        <Button size="sm" variant="primary" onClick={this.duplicateSelected} title="Duplicate selected (Ctrl+D)"><Icon name="clone" /> Duplicate</Button>
+                                        <Button size="sm" variant={this.state.showArrayClone ? 'success' : 'primary'} onClick={this.toggleArrayClone} title="Array clone selected into a grid"><Icon name="th" /> Array</Button>
+                                        <Button size="sm" variant={this.state.showTabGen ? 'success' : 'warning'} onClick={this.toggleTabGen} title="Generate holding tabs on exterior perimeter"><Icon name="minus" /> Tabs</Button>
                                     </ButtonGroup>
                                     {this.state.showArrayClone && (
                                         <div style={{ marginTop: 4, padding: 4, border: '1px solid #ccc', borderRadius: 3, backgroundColor: '#f9f9f9' }}>
@@ -701,9 +701,9 @@ class FloatingControls extends React.Component {
                                                             </label>
                                                         </td>
                                                         <td colSpan="2">
-                                                            <Button bsSize="xsmall" bsStyle="success" onClick={this.applyArrayClone}><Icon name="check" /> Apply</Button>
+                                                            <Button size="sm" variant="success" onClick={this.applyArrayClone}><Icon name="check" /> Apply</Button>
                                                             {' '}
-                                                            <Button bsSize="xsmall" bsStyle="default" onClick={this.toggleArrayClone}><Icon name="times" /></Button>
+                                                            <Button size="sm" variant="secondary" onClick={this.toggleArrayClone}><Icon name="times" /></Button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -741,9 +741,9 @@ class FloatingControls extends React.Component {
                                                     )}
                                                     <tr>
                                                         <td colSpan="4" style={{ textAlign: 'right' }}>
-                                                            <Button bsSize="xsmall" bsStyle="success" onClick={this.applyTabGen}><Icon name="check" /> Apply</Button>
+                                                            <Button size="sm" variant="success" onClick={this.applyTabGen}><Icon name="check" /> Apply</Button>
                                                             {' '}
-                                                            <Button bsSize="xsmall" bsStyle="default" onClick={this.toggleTabGen}><Icon name="times" /></Button>
+                                                            <Button size="sm" variant="secondary" onClick={this.toggleTabGen}><Icon name="times" /></Button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -953,7 +953,7 @@ class WorkspaceContent extends React.Component {
         this.drawSelDocsState = {};
     }
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.pointers = [];
         this.lightenMachineBounds = new LightenMachineBounds();
         this.grid = new Grid();
@@ -1271,7 +1271,7 @@ class WorkspaceContent extends React.Component {
         this.__updating = true;
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         this.setCamera(nextProps);
     }
 
@@ -1647,7 +1647,7 @@ WorkspaceContent = connect(
 )(withDocumentCache(WorkspaceContent));
 
 class Workspace extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.gcodePreview = new GcodePreview();
         this.laserPreview = new LaserPreview();
         this.setSimTime = e => {
@@ -1743,8 +1743,8 @@ class Workspace extends React.Component {
                             <tbody>
                                 <tr>
                                     <td colSpan='2'>
-                                        <button className='btn btn-default' onClick={this.zoomMachine}><i className="fa fa-fw fa-search"></i>Mach</button>
-                                        <button className='btn btn-default' onClick={this.zoomDoc}><i className="fa fa-fw fa-search"></i>Doc</button>
+                                        <button className='btn btn-secondary' onClick={this.zoomMachine}><i className="fa fa-fw fa-search"></i>Mach</button>
+                                        <button className='btn btn-secondary' onClick={this.zoomDoc}><i className="fa fa-fw fa-search"></i>Doc</button>
                                     </td>
                                 </tr>
                                 <tr>
@@ -1784,19 +1784,19 @@ class Workspace extends React.Component {
                                 <tr>
                                     <td>
                                         <div className='input-group'>
-                                            <span className='input-group-addon'>Simulator</span>
-                                            <input style={{ width: '250px' }} class='form-control' value={workspace.simTime} onChange={this.setSimTime} type="range" step="any" max={this.gcodePreview.g1Time + this.gcodePreview.g0Dist / workspace.g0Rate} is glyphicon="transfer" />
+                                            <span className='input-group-text'>Simulator</span>
+                                            <input style={{ width: '250px' }} className='form-control' value={workspace.simTime} onChange={this.setSimTime} type="range" step="any" max={this.gcodePreview.g1Time + this.gcodePreview.g0Dist / workspace.g0Rate} />
                                         </div>
                                         <div className='input-group'>
-                                            <span className='input-group-addon'>Sim G0 Feed</span>
+                                            <span className='input-group-text'>Sim G0 Feed</span>
                                             <Input style={{ width: '85px' }} className='form-control' value={workspace.g0Rate} onChangeValue={setG0Rate} type="number" step="any" />
-                                            <span className='input-group-addon'>mm/min</span>
+                                            <span className='input-group-text'>mm/min</span>
                                         </div>
                                         {settings.machineAEnabled &&
                                             <div className='input-group'>
-                                                <span className='input-group-addon'>Sim Rotary Diameter</span>
+                                                <span className='input-group-text'>Sim Rotary Diameter</span>
                                                 <Input style={{ width: '85px' }} className='form-control' value={workspace.rotaryDiameter} onChangeValue={setRotaryDiameter} type="number" step="any" />
-                                                <span className='input-group-addon'>mm</span>
+                                                <span className='input-group-text'>mm</span>
                                             </div>
                                         }
                                     </td>

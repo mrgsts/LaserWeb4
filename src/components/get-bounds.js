@@ -15,6 +15,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import PropTypes from 'prop-types';
 
 export class GetBounds extends React.Component {
     constructor() {
@@ -66,7 +67,7 @@ export class GetBounds extends React.Component {
     }
 }
 GetBounds.childContextTypes = {
-    bounds: React.PropTypes.any,
+    bounds: PropTypes.any,
 };
 
 export function withGetBounds(Component) {
@@ -89,7 +90,7 @@ export function withStoredBounds(Component) {
         }
     };
     Wrapper.contextTypes = {
-        bounds: React.PropTypes.any,
+        bounds: PropTypes.any,
     };
     return Wrapper;
 }

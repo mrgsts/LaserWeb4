@@ -7,16 +7,18 @@ import 'react-toggle/style.css';
 import '../styles/forms.css';
 import Select from 'react-select'
 
-import { Tooltip, Overlay, OverlayTrigger, Popover, FormControl, InputGroup, ControlLabel, FormGroup, Checkbox, Button, Label } from 'react-bootstrap';
+import { Tooltip, Overlay, OverlayTrigger, Popover, Form, InputGroup, Button, Badge } from 'react-bootstrap';
 import Icon from './font-awesome';
 
 import convert from 'color-convert'
 
 // <input> for text and number fields
 export class Input extends React.Component {
-    componentWillMount() {
+    constructor(props) {
+        super(props);
         this.onChange = this.onChange.bind(this);
         this.setInput = this.setInput.bind(this);
+        this.inputRef = React.createRef();
     }
 
     convert(value) {
@@ -27,7 +29,8 @@ export class Input extends React.Component {
     }
 
     setInput() {
-        ReactDOM.findDOMNode(this).value = this.convert(this.props.value);
+        let node = this.inputRef.current || ReactDOM.findDOMNode(this);
+        if (node) node.value = this.convert(this.props.value);
     }
 
     onChange(e) {
@@ -40,8 +43,8 @@ export class Input extends React.Component {
 
     componentDidUpdate() {
         let v = this.convert(this.props.value);
-        let node = ReactDOM.findDOMNode(this);
-        if (this.convert(node.value) != v)
+        let node = this.inputRef.current || ReactDOM.findDOMNode(this);
+        if (node && this.convert(node.value) != v)
             node.value = v;
     }
 
@@ -50,15 +53,17 @@ export class Input extends React.Component {
         if (Component)
             return <Component {...rest} onChange={this.onChange} onBlur={this.setInput} />;
         else
-            return <input {...rest} onChange={this.onChange} onBlur={this.setInput} />;
+            return <input ref={this.inputRef} {...rest} onChange={this.onChange} onBlur={this.setInput} />;
     }
 };
 
 class TooltipFormGroup extends React.Component {
-    componentWillMount() {
+    constructor(props) {
+        super(props);
         this.handleBlur = this.handleBlur.bind(this);
         this.handleFocus = this.handleFocus.bind(this);
-        this.setState({ hasFocus: false })
+        this.targetRef = React.createRef();
+        this.state = { hasFocus: false };
     }
 
     handleBlur(e) {
@@ -69,19 +74,18 @@ class TooltipFormGroup extends React.Component {
     }
 
     render() {
-        return <FormGroup validationState={this.props.validationState}
+        let isInvalid = !!this.props.validationState;
+        return <Form.Group className={isInvalid ? 'has-validation' : ''}
             onBlur={(e) => this.handleBlur(e)}
             onFocus={(e) => this.handleFocus(e)}
             onMouseEnter={(e) => this.handleFocus(e)}
             onMouseLeave={(e) => this.handleBlur(e)}
-
-
-            ref="target">
+            ref={this.targetRef}>
             {this.props.children}
-            <Overlay container={this.props.container || undefined} show={this.props.validationContent && this.state.hasFocus ? true : false} placement={this.props.validationPlacement} target={() => ReactDOM.findDOMNode(this.refs.target)}>
-                <Tooltip id="validation_tooltip" >{this.props.validationContent}</Tooltip>
+            <Overlay container={this.props.container || undefined} show={!!(this.props.validationContent && this.state.hasFocus)} placement={this.props.validationPlacement} target={this.targetRef}>
+                {(props) => <Tooltip id="validation_tooltip" {...props}>{this.props.validationContent}</Tooltip>}
             </Overlay>
-        </FormGroup>
+        </Form.Group>
     }
 }
 
@@ -98,17 +102,17 @@ export class NumberField extends React.Component {
 
 
         let input = <InputGroup>
-            {labelAddon ? <InputGroup.Addon>{description}{info}</InputGroup.Addon> : undefined}
-            <Input Component={FormControl} type="number" onChangeValue={v => dispatch(setAttrs({ [field]: v }, object.id))} value={object[field]} {...rest} />
-            {errors ? <FormControl.Feedback /> : undefined}
-            {units ? <InputGroup.Addon>{units}</InputGroup.Addon> : undefined}
+            {labelAddon ? <InputGroup.Text>{description}{info}</InputGroup.Text> : undefined}
+            <Input Component={Form.Control} type="number" onChangeValue={v => dispatch(setAttrs({ [field]: v }, object.id))} value={object[field]} isInvalid={!!errors} {...rest} />
+            {errors ? <Form.Control.Feedback type="invalid" /> : undefined}
+            {units ? <InputGroup.Text>{units}</InputGroup.Text> : undefined}
             
         </InputGroup>;
 
 
         return <TooltipFormGroup validationState={errors ? "error" : undefined}
             validationContent={errors}
-            validationPlacement="right">{!labelAddon ? <ControlLabel>{description}{info}</ControlLabel> : undefined}{input}</TooltipFormGroup>
+            validationPlacement="right">{!labelAddon ? <Form.Label>{description}{info}</Form.Label> : undefined}{input}</TooltipFormGroup>
 
     }
 }
@@ -119,31 +123,32 @@ export function TextField({object, field, description, units = "", setAttrs, dis
     let isTextArea = typeof (rest.rows) != "undefined";
     let hasErrors = typeof (rest.errors) !== "undefined" && rest.errors !== null && typeof (rest.errors[field]) !== "undefined";
     let errors = hasErrors ? rest.errors[field].join(". ") : null; delete rest.errors;
-    let tooltip = <Tooltip id={"toolip_" + field} >{errors}</Tooltip>;
     let input = <InputGroup style={{ width: "100%" }}>
     
-        {(!isTextArea && labelAddon!==false) ? (<InputGroup.Addon>{description}{info}</InputGroup.Addon>) : undefined}
+        {(!isTextArea && labelAddon!==false) ? (<InputGroup.Text>{description}{info}</InputGroup.Text>) : undefined}
         {(!isTextArea) ? (
-            <FormControl
+            <Form.Control
                 type="text"
                 value={object[field]}
                 onChange={e => dispatch(setAttrs({ [field]: e.target.value }, object.id))}
+                isInvalid={!!errors}
                 {...rest}
                 />
         ) : (
-            <FormControl componentClass="textarea" id={field}
+            <Form.Control as="textarea" id={field}
                     onChange={e => dispatch(setAttrs({ [field]: e.target.value }, object.id))}
                     value={object[field]}
+                    isInvalid={!!errors}
                     {...rest}
                 />
             )}
-        {(units !== "") ? <InputGroup.Addon>{units}</InputGroup.Addon> : (undefined)}
+        {(units !== "") ? <InputGroup.Text>{units}</InputGroup.Text> : (undefined)}
 
     </InputGroup>;
 
     return <TooltipFormGroup validationState={errors ? "error" : undefined}
         validationContent={errors}
-        validationPlacement="right">{!labelAddon || isTextArea ? <ControlLabel>{description}{info}</ControlLabel> : undefined}{input}</TooltipFormGroup>
+        validationPlacement="right">{!labelAddon || isTextArea ? <Form.Label>{description}{info}</Form.Label> : undefined}{input}</TooltipFormGroup>
 
 }
 
@@ -176,9 +181,8 @@ export class SelectField extends React.Component {
 
         let hasErrors = typeof (rest.errors) !== "undefined" && rest.errors !== null && typeof (rest.errors[field]) !== "undefined";
         let errors = hasErrors ? rest.errors[field].join(". ") : null; delete rest.errors;
-        let tooltip = <Tooltip id={"toolip_" + field} >{errors}</Tooltip>;
 
-        let label = labelAddon ? <InputGroup.Addon>{description}{units ? " (" + units + ")" : undefined}{info}</InputGroup.Addon> : <ControlLabel>{description}{units ? " (" + units + ")" : undefined}{info}</ControlLabel>
+        let label = labelAddon ? <InputGroup.Text>{description}{units ? " (" + units + ")" : undefined}{info}</InputGroup.Text> : <Form.Label>{description}{units ? " (" + units + ")" : undefined}{info}</Form.Label>
 
         let props = { ...selectProps, options: selectOptions(data), value: object[field] || defaultValue, onChange: (v) => dispatch(setAttrs({ [field]: v.value }, object.id)) }
 
@@ -195,7 +199,6 @@ export class SelectField extends React.Component {
 export function ToggleField({object, field, description, units = "", setAttrs, dispatch, info, disabled=false, ...rest}) {
     let hasErrors = typeof (rest.errors) !== "undefined" && rest.errors !== null && typeof (rest.errors[field]) !== "undefined";
     let errors = hasErrors ? rest.errors[field].join(". ") : null; delete rest.errors;
-    let tooltip = <Tooltip id={"toolip_" + field} >{errors}</Tooltip>;
     let input = <div >
         <Toggle disabled={disabled} id={"toggle_" + object.id + "_" + field} defaultChecked={object[field] == true} onChange={e => dispatch(setAttrs({ [field]: e.target.checked }, object.id))} />
         <label htmlFor={"toggle_" + object.id + "_" + field}>{description}</label> {info}
@@ -291,7 +294,7 @@ export class CheckBoxListField extends React.Component {
     render() {
         let checks = [];
         let checked = this.state.checked;
-        this.props.data.forEach(o => { checks.push(<Checkbox key={o} value={checked.indexOf(o) !== false} onChange={(e) => { this.handleChange(e, o) } }>{o}</Checkbox>) })
+        this.props.data.forEach(o => { checks.push(<Form.Check key={o} checked={checked.indexOf(o) !== -1} onChange={(e) => { this.handleChange(e, o) } } label={o} />) })
         return (
             <div className="checkboxListField">{checks}</div>
         )
@@ -361,8 +364,8 @@ InputRangeField = connect()(InputRangeField);
 
 
 export function Info(content,title='Help',alignment='right', trigger="focus") {
-    let pop=<Popover id={"popover-positioned-"+alignment} title={title}>{content}</Popover>
-    return <OverlayTrigger trigger={trigger} placement="right" overlay={pop}><Button bsSize="xsmall" bsStyle="link" style={{color:"blue", cursor:'pointer'}}><Icon name="question-circle"/></Button></OverlayTrigger>
+    let pop=<Popover id={"popover-positioned-"+alignment}><Popover.Header as="h3">{title}</Popover.Header><Popover.Body>{content}</Popover.Body></Popover>
+    return <OverlayTrigger trigger={trigger} placement="right" overlay={pop}><Button size="sm" variant="link" style={{color:"blue", cursor:'pointer'}}><Icon name="question-circle"/></Button></OverlayTrigger>
 }
 
 export class ColorPicker extends React.Component{
@@ -387,7 +390,7 @@ export class ColorPicker extends React.Component{
     }
     render(){
         return <div className={"btn-colorPicker "+(this.props.disabled?"disabled":"")}>
-            <ModButton bsSize="xsmall" disabled={this.props.disabled}  bsStyle={this.props.bsStyle} onClick={this.handleClick}>
+            <ModButton size="sm" disabled={this.props.disabled}  variant={this.props.variant || this.props.bsStyle} onClick={this.handleClick}>
                 <Icon name={this.props.icon} />
                 <Icon name={this.props.icon} data-event="shiftKey" data-eventClassName='btn-danger' />
             </ModButton>
@@ -443,7 +446,7 @@ export class ModButton extends React.Component {
             if (child.props['data-eventClassName']) className += ' '+child.props['data-eventClassName']
         
         return (
-            <Button disabled={this.props.disabled} bsStyle={this.props.bsStyle} bsSize={this.props.bsSize || 'small'} className={className} onClick={(e) => this.handleClick(e)}>{child}</Button>
+            <Button disabled={this.props.disabled} variant={this.props.variant || this.props.bsStyle || 'secondary'} size={this.props.size || this.props.bsSize || 'sm'} className={className} onClick={(e) => this.handleClick(e)}>{child}</Button>
         )
     }
 }
@@ -456,24 +459,22 @@ export class SearchButton extends React.Component {
         this.state={search: this.props.search}
     }
 
-    componentWillReceiveProps(nextProps)
+    UNSAFE_componentWillReceiveProps(nextProps)
     {
         this.setState({search: nextProps.search})
     }
 
     render(){
 
-        let pop=<Popover id={"SearchButton_popover"} title={this.props.title || "Search"}><FormGroup>
+        let pop=<Popover id={"SearchButton_popover"}><Popover.Header as="h3">{this.props.title || "Search"}</Popover.Header><Popover.Body><Form.Group>
             <InputGroup>
-            <FormControl type="text" value={this.state.search||""} onChange={e=>{this.setState({search:e.target.value})}} />
-            <InputGroup.Button>
-                <Button bsStyle="primary" onClick={e=>{this.props.onSearch(this.state.search)}}><Icon name="search"/></Button>
-                <Button bsStyle="danger" onClick={e=>{this.props.onSearch(null)}}><Icon name="remove"/></Button>
-            </InputGroup.Button>
+            <Form.Control type="text" value={this.state.search||""} onChange={e=>{this.setState({search:e.target.value})}} />
+                <Button variant="primary" onClick={e=>{this.props.onSearch(this.state.search)}}><Icon name="search"/></Button>
+                <Button variant="danger" onClick={e=>{this.props.onSearch(null)}}><Icon name="remove"/></Button>
             </InputGroup>
-        </FormGroup></Popover>
+        </Form.Group></Popover.Body></Popover>
 
-        return <OverlayTrigger trigger="click" placement={this.props.placement || "top"} overlay={pop}><Button bsStyle={this.props.bsStyle} bsSize={this.props.bsSize}>{this.props.children}</Button></OverlayTrigger>
+        return <OverlayTrigger trigger="click" placement={this.props.placement || "top"} overlay={pop}><Button variant={this.props.variant || this.props.bsStyle || 'secondary'} size={this.props.size || this.props.bsSize || 'sm'}>{this.props.children}</Button></OverlayTrigger>
         
     }
 }

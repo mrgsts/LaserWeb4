@@ -18,7 +18,7 @@ export class OmrJog extends React.Component {
     render()
     {
         return <div className="hr" style={{textAlign:"left"}}>
-            <label>OMR</label><Button bsStyle="primary" onClick={this.handleSetPosition}>Set Position</Button>
+            <label>OMR</label><Button variant="primary" onClick={this.handleSetPosition}>Set Position</Button>
         </div>
     }
 }

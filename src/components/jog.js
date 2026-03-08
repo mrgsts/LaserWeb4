@@ -6,7 +6,7 @@
 // React
 import React from 'react'
 import { connect } from 'react-redux';
-import { PanelGroup, Panel, ProgressBar} from 'react-bootstrap';
+import { ProgressBar, Badge } from 'react-bootstrap';
 
 import { setSettingsAttrs } from '../actions/settings';
 import { setWorkspaceAttrs } from '../actions/workspace';
@@ -21,7 +21,6 @@ import { listSDFiles } from '../lib/fluidnc-http';
 import '../styles/index.css'
 import Icon from './font-awesome'
 import Toggle from 'react-toggle';
-import { Label } from 'react-bootstrap'
 import { bindKeys, unbindKeys } from './keyboard'
 import Gamepad from 'gamepad.js';
 import { OmrJog } from './omr';
@@ -364,7 +363,7 @@ class Jog extends React.Component {
         
     }
 
-    componentWillReceiveProps(props)
+    UNSAFE_componentWillReceiveProps(props)
     {
         this.checkGcodeBounds(props.gcode);
     }
@@ -511,10 +510,10 @@ class Jog extends React.Component {
             <div style={{ paddingTop: 6 }} >
                         <span className="badge badge-default badge-notify" title="Items in Queue" id="machineStatus" style={{ marginRight: 5 }}>Not Connected</span>
                         <span className="badge badge-default badge-notify" title="Items in Queue" id="queueCnt" style={{ marginRight: 5 }}>Queued: 0</span>
-                        <div id="mPosition" className="well well-sm" style={{ marginBottom: 7}}>
+                        <div id="mPosition" className="bg-light p-2 border rounded" style={{ marginBottom: 7}}>
                             <div id="rX" className="drolabel">X:</div>
                             <div className="btn-group dropdown" style={{ marginLeft: -3 }}>
-                                <button id="" type="button" className="btn btn-sm btn-default" style={{ padding: 2, top: -3, backgroundColor: '#ffdbdb' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button id="" type="button" className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3, backgroundColor: '#ffdbdb' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <span className="fa-stack fa-1x">
                                         <i className="fa fa-caret-down fa-stack-1x"></i>
                                     </span>
@@ -537,7 +536,7 @@ class Jog extends React.Component {
 
                             <div id="rY" className="drolabel">Y:</div>
                             <div className="btn-group dropdown" style={{ marginLeft: -3 }}>
-                                <button id="" type="button" className="btn btn-sm btn-default" style={{ padding: 2, top: -3, backgroundColor: '#dbffdf' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button id="" type="button" className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3, backgroundColor: '#dbffdf' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <span className="fa-stack fa-1x">
                                         <i className="fa fa-caret-down fa-stack-1x"></i>
                                     </span>
@@ -562,7 +561,7 @@ class Jog extends React.Component {
                                 <div>
                                     <div id="rZ" className="drolabel">Z:</div>
                                     <div className="btn-group dropdown" style={{ marginLeft: -3 }}>
-                                        <button id="" type="button" className="btn btn-sm btn-default" style={{ padding: 2, top: -3, backgroundColor: '#dbe8ff' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <button id="" type="button" className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3, backgroundColor: '#dbe8ff' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                             <span className="fa-stack fa-1x">
                                                 <i className="fa fa-caret-down fa-stack-1x"></i>
                                             </span>
@@ -588,7 +587,7 @@ class Jog extends React.Component {
                                 <div>
                                     <div id="rA" className="drolabel">A:</div>
                                     <div className="btn-group dropdown" style={{ marginLeft: -3 }}>
-                                        <button id="" type="button" className="btn btn-sm btn-default" style={{ padding: 2, top: -3, backgroundColor: '#fffbcf' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <button id="" type="button" className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3, backgroundColor: '#fffbcf' }} data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                             <span className="fa-stack fa-1x">
                                                 <i className="fa fa-caret-down fa-stack-1x"></i>
                                             </span>
@@ -615,17 +614,17 @@ class Jog extends React.Component {
                                 <div className="drolabel">F:</div>
                                 <div id="oF" className="droOR">100<span className="drounitlabel"> %</span></div>
                                 <div className="btn-group btn-override">
-                                    <button id="rF" type="button" onClick={(e) => { this.resetF(e) }} className="btn btn-sm btn-default" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Reset F-Override to 100%">
+                                    <button id="rF" type="button" onClick={(e) => { this.resetF(e) }} className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Reset F-Override to 100%">
                                         <span className="fa-stack fa-1x">
                                             <i className="fa fa-retweet fa-stack-1x"></i>
                                         </span>
                                     </button>
-                                    <button id="iF" type="button" onClick={(e) => { this.increaseF(e) }} className="btn btn-sm btn-default" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Increase by 1% or Ctrl+Click to increase by 10%">
+                                    <button id="iF" type="button" onClick={(e) => { this.increaseF(e) }} className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Increase by 1% or Ctrl+Click to increase by 10%">
                                         <span className="fa-stack fa-1x">
                                             <i className="fa fa-arrow-up fa-stack-1x"></i>
                                         </span>
                                     </button>
-                                    <button id="dF" type="button" onClick={(e) => { this.decreaseF(e) }} className="btn btn-sm btn-default" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Decrease by 1% or Ctrl+Click to decrease by 10%">
+                                    <button id="dF" type="button" onClick={(e) => { this.decreaseF(e) }} className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Decrease by 1% or Ctrl+Click to decrease by 10%">
                                         <span className="fa-stack fa-1x">
                                             <i className="fa fa-arrow-down fa-stack-1x"></i>
                                         </span>
@@ -635,17 +634,17 @@ class Jog extends React.Component {
                                 <div className="drolabel">S:</div>
                                 <div id="oS" className="droOR">100<span className="drounitlabel"> %</span></div>
                                 <div className="btn-group btn-override">
-                                    <button id="rS" type="button" onClick={(e) => { this.resetS(e) }} className="btn btn-sm btn-default" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Reset S-Override to 100%">
+                                    <button id="rS" type="button" onClick={(e) => { this.resetS(e) }} className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Reset S-Override to 100%">
                                         <span className="fa-stack fa-1x">
                                             <i className="fa fa-retweet fa-stack-1x"></i>
                                         </span>
                                     </button>
-                                    <button id="iS" type="button" onClick={(e) => { this.increaseS(e) }} className="btn btn-sm btn-default" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Increase by 1% or Ctrl+Click to increase by 10%">
+                                    <button id="iS" type="button" onClick={(e) => { this.increaseS(e) }} className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Increase by 1% or Ctrl+Click to increase by 10%">
                                         <span className="fa-stack fa-1x">
                                             <i className="fa fa-arrow-up fa-stack-1x"></i>
                                         </span>
                                     </button>
-                                    <button id="dS" type="button" onClick={(e) => { this.decreaseS(e) }} className="btn btn-sm btn-default" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Decrease by 1% or Ctrl+Click to decrease by 10%">
+                                    <button id="dS" type="button" onClick={(e) => { this.decreaseS(e) }} className="btn btn-sm btn-secondary" style={{ padding: 2, top: -3 }} data-toggle="tooltip" data-placement="bottom" title="Click to Decrease by 1% or Ctrl+Click to decrease by 10%">
                                         <span className="fa-stack fa-1x">
                                             <i className="fa fa-arrow-down fa-stack-1x"></i>
                                         </span>
@@ -653,11 +652,11 @@ class Jog extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <div className="well well-sm" style={{ marginBottom: 7}}>
+                        <div className="bg-light p-2 border rounded" style={{ marginBottom: 7}}>
                           <div id="controlmachine" className="btn-group" role="group" aria-label="controljob">
                               <div className="btn-group btn-group-justified">
                                   <div className="btn-group">
-                                      <button type='button' id="homeAll" className="btn btn-ctl btn-default" onClick={(e) => { this.homeAll(e) }}>
+                                      <button type='button' id="homeAll" className="btn btn-ctl btn-secondary" onClick={(e) => { this.homeAll(e) }}>
                                           <span className="fa-stack fa-1x">
                                               <i className="fa fa-home fa-stack-1x"></i>
                                               <strong className="fa-stack-1x icon-top-text">home</strong>
@@ -666,7 +665,7 @@ class Jog extends React.Component {
                                       </button>
                                   </div>
                                   <div className="btn-group">
-                                      <button type='button' id="playBtn" className={(this.state.warnings)? "btn btn-ctl btn-warning":"btn btn-ctl btn-default"} onClick={(e) => { this.runJob(e) }} title={this.state.warnings}>
+                                      <button type='button' id="playBtn" className={(this.state.warnings)? "btn btn-ctl btn-warning":"btn btn-ctl btn-secondary"} onClick={(e) => { this.runJob(e) }} title={this.state.warnings}>
                                           <span className="fa-stack fa-1x">
                                               <i id="playicon" className="fa fa-play fa-stack-1x"></i>
                                               <strong className="fa-stack-1x icon-top-text">run</strong>
@@ -675,7 +674,7 @@ class Jog extends React.Component {
                                       </button>
                                   </div>
                                   <div className="btn-group" style={{ display: 'none' }}>
-                                      <button type='button' id="uploadBtn" className="btn btn-ctl btn-default" onClick={(e) => { this.uploadSD(e) }}>
+                                      <button type='button' id="uploadBtn" className="btn btn-ctl btn-secondary" onClick={(e) => { this.uploadSD(e) }}>
                                           <span className="fa-stack fa-1x">
                                               <i className="fa fa-hdd-o fa-stack-1x"></i>
                                               <strong className="fa-stack-1x icon-top-text">upload</strong>
@@ -684,7 +683,7 @@ class Jog extends React.Component {
                                       </button>
                                   </div>
                                   <div className="btn-group">
-                                      <button type='button' id="stopBtn" className="btn btn-ctl btn-default" onClick={(e) => { this.abortJob(e) }}>
+                                      <button type='button' id="stopBtn" className="btn btn-ctl btn-secondary" onClick={(e) => { this.abortJob(e) }}>
                                           <span className="fa-stack fa-1x">
                                               <i id="stopIcon" className="fa fa-stop fa-stack-1x"></i>
                                               <strong className="fa-stack-1x icon-top-text">abort</strong>
@@ -693,7 +692,7 @@ class Jog extends React.Component {
                                       </button>
                                   </div>
                                   <div className="btn-group">
-                                      <button type='button' id="zeroAll" className="btn btn-ctl btn-default" onClick={(e) => { this.setZero('all') }}>
+                                      <button type='button' id="zeroAll" className="btn btn-ctl btn-secondary" onClick={(e) => { this.setZero('all') }}>
                                           <span className="fa-stack fa-1x">
                                               <i className="fa fa-crosshairs fa-stack-1x"></i>
                                               <strong className="fa-stack-1x icon-top-text">set</strong>
@@ -702,7 +701,7 @@ class Jog extends React.Component {
                                       </button>
                                   </div>
                                   <div className="btn-group">
-                                      <button type='button' id="bounding" className="btn btn-ctl btn-default" onClick={(e) => { this.checkSize(e) }}>
+                                      <button type='button' id="bounding" className="btn btn-ctl btn-secondary" onClick={(e) => { this.checkSize(e) }}>
                                           <span className="fa-stack fa-1x">
                                               <i className="fa fa-square-o fa-stack-1x"></i>
                                               <strong className="fa-stack-1x icon-top-text">check</strong>
@@ -713,12 +712,12 @@ class Jog extends React.Component {
                               </div>
                           </div>
                         </div>
-                        <div className="well well-sm" style={{ marginBottom: 7}}>
+                        <div className="bg-light p-2 border rounded" style={{ marginBottom: 7}}>
                             <table className='centerTable' style={{ width: 99 + '%' }}>
                                 <tbody>
                                     <tr>
                                         <td>
-                                            <button id="lT" type="button" data-title="Laser Test" className="btn btn-ctl btn-default" onClick={(e) => { this.laserTest(e) }}>
+                                            <button id="lT" type="button" data-title="Laser Test" className="btn btn-ctl btn-secondary" onClick={(e) => { this.laserTest(e) }}>
                                                 <span className="fa-stack fa-1x">
                                                     <i className="fa fa-fire fa-stack-1x"></i>
                                                     <strong className="fa-stack-1x icon-top-text">Laser</strong>
@@ -727,7 +726,7 @@ class Jog extends React.Component {
                                             </button>
                                         </td>
                                         <td>
-                                            <button style={{ backgroundColor: '#dbffdf' }} id="yP" type="button" data-title="Jog Y+" className="btn btn-ctl btn-default" onClick={this.jogUp.bind(this)}>
+                                            <button style={{ backgroundColor: '#dbffdf' }} id="yP" type="button" data-title="Jog Y+" className="btn btn-ctl btn-secondary" onClick={this.jogUp.bind(this)}>
                                                 <span className="fa-stack fa-1x">
                                                     <i className="fa fa-arrow-up fa-stack-1x"></i>
                                                     <strong className="fa-stack-1x icon-top-text">Y+</strong>
@@ -736,7 +735,7 @@ class Jog extends React.Component {
                                             </button>
                                         </td>
                                         <td>
-                                            <button id="motorsOff" type="button" data-title="Motors Off" className="btn btn-ctl btn-default" style={{ display: 'none' }} onClick={(e) => { this.motorsOff(e) }}>
+                                            <button id="motorsOff" type="button" data-title="Motors Off" className="btn btn-ctl btn-secondary" style={{ display: 'none' }} onClick={(e) => { this.motorsOff(e) }}>
                                                 <span className="fa-stack fa-1x">
                                                     <i className="fa fa-power-off fa-stack-1x"></i>
                                                     <strong className="fa-stack-1x icon-top-text">Motors</strong>
@@ -747,7 +746,7 @@ class Jog extends React.Component {
                                         <td></td>
                                         {machineAEnabled && (
                                             <td>
-                                                <button style={{ backgroundColor: '#fffbcf' }} id="aP" type="button" data-title="Jog A+" className="btn btn-ctl btn-default" onClick={this.jogAplus.bind(this)}>
+                                                <button style={{ backgroundColor: '#fffbcf' }} id="aP" type="button" data-title="Jog A+" className="btn btn-ctl btn-secondary" onClick={this.jogAplus.bind(this)}>
                                                     <span className="fa-stack fa-1x"><i className="fa fa-arrow-up fa-stack-1x"></i>
                                                         <strong className="fa-stack-1x icon-top-text">A+</strong>
                                                         <strong className="fa-stack-1x stepsizeval icon-bot-text">{this.state.jogStepsize}mm</strong>
@@ -757,7 +756,7 @@ class Jog extends React.Component {
                                         )}
                                         {machineZEnabled && (
                                             <td>
-                                                <button style={{ backgroundColor: '#dbe8ff' }} id="zP" type="button" data-title="Jog Z+" className="btn btn-ctl btn-default" onClick={this.jogZUp.bind(this)}>
+                                                <button style={{ backgroundColor: '#dbe8ff' }} id="zP" type="button" data-title="Jog Z+" className="btn btn-ctl btn-secondary" onClick={this.jogZUp.bind(this)}>
                                                     <span className="fa-stack fa-1x"><i className="fa fa-arrow-up fa-stack-1x"></i>
                                                         <strong className="fa-stack-1x icon-top-text">Z+</strong>
                                                         <strong className="fa-stack-1x stepsizeval icon-bot-text">{this.state.jogStepsize}mm</strong>
@@ -771,7 +770,7 @@ class Jog extends React.Component {
                                     </tr>
                                     <tr>
                                         <td>
-                                            <button style={{ backgroundColor: '#ffdbdb' }} id="xM" type="button" data-title="Jog X-" className="btn btn-ctl btn-default" onClick={this.jogLeft.bind(this)}>
+                                            <button style={{ backgroundColor: '#ffdbdb' }} id="xM" type="button" data-title="Jog X-" className="btn btn-ctl btn-secondary" onClick={this.jogLeft.bind(this)}>
                                                 <span className="fa-stack fa-1x">
                                                     <i className="fa fa-arrow-left fa-stack-1x"></i>
                                                     <strong className="fa-stack-1x icon-top-text">X-</strong>
@@ -780,7 +779,7 @@ class Jog extends React.Component {
                                             </button>
                                         </td>
                                         <td>
-                                            <button style={{ backgroundColor: '#dbffdf' }} id="yM" type="button" data-title="Jog Y-" className="btn btn-ctl btn-default" onClick={this.jogDown.bind(this)}>
+                                            <button style={{ backgroundColor: '#dbffdf' }} id="yM" type="button" data-title="Jog Y-" className="btn btn-ctl btn-secondary" onClick={this.jogDown.bind(this)}>
                                                 <span className="fa-stack fa-1x">
                                                     <i className="fa fa-arrow-down fa-stack-1x"></i>
                                                     <strong className="fa-stack-1x icon-top-text">Y-</strong>
@@ -789,7 +788,7 @@ class Jog extends React.Component {
                                             </button>
                                         </td>
                                         <td>
-                                            <button style={{ backgroundColor: '#ffdbdb' }} id="xP" type="button" data-title="Jog X+" className="btn btn-ctl btn-default" onClick={this.jogRight.bind(this)}>
+                                            <button style={{ backgroundColor: '#ffdbdb' }} id="xP" type="button" data-title="Jog X+" className="btn btn-ctl btn-secondary" onClick={this.jogRight.bind(this)}>
                                                 <span className="fa-stack fa-1x">
                                                     <i className="fa fa-arrow-right fa-stack-1x"></i>
                                                     <strong className="fa-stack-1x icon-top-text">X+</strong>
@@ -802,7 +801,7 @@ class Jog extends React.Component {
                                         </td>
                                         {machineAEnabled && (
                                             <td>
-                                                <button style={{ backgroundColor: '#fffbcf' }} id="aM" type="button" data-title="Jog A-" className="btn btn-ctl btn-default" onClick={this.jogAminus.bind(this)}>
+                                                <button style={{ backgroundColor: '#fffbcf' }} id="aM" type="button" data-title="Jog A-" className="btn btn-ctl btn-secondary" onClick={this.jogAminus.bind(this)}>
                                                     <span className="fa-stack fa-1x">
                                                         <i className="fa fa-arrow-down fa-stack-1x"></i>
                                                         <strong className="fa-stack-1x icon-top-text">A-</strong>
@@ -813,7 +812,7 @@ class Jog extends React.Component {
                                         )}
                                         {machineZEnabled && (
                                             <td>
-                                                <button style={{ backgroundColor: '#dbe8ff' }} id="zM" type="button" data-title="Jog Z-" className="btn btn-ctl btn-default" onClick={this.jogZDown.bind(this)}>
+                                                <button style={{ backgroundColor: '#dbe8ff' }} id="zM" type="button" data-title="Jog Z-" className="btn btn-ctl btn-secondary" onClick={this.jogZDown.bind(this)}>
                                                     <span className="fa-stack fa-1x">
                                                         <i className="fa fa-arrow-down fa-stack-1x"></i>
                                                         <strong className="fa-stack-1x icon-top-text">Z-</strong>
@@ -830,7 +829,7 @@ class Jog extends React.Component {
                                         <td colSpan="5">
                                             <form id="stepsize" >
                                                 <div data-toggle="buttons">
-                                                    <label style={{ backgroundColor: '#F5F5F5' }} className="btn btn-jog btn-default" onClick={(e) => { this.changeStepsize(0.1) }} >
+                                                    <label style={{ backgroundColor: '#F5F5F5' }} className="btn btn-jog btn-secondary" onClick={(e) => { this.changeStepsize(0.1) }} >
                                                         <input type="radio" name="stp" defaultValue="0.1" />
                                                         <span className="fa-stack fa-1x">
                                                             <i className="fa fa-arrows-h fa-stack-1x"></i>
@@ -838,7 +837,7 @@ class Jog extends React.Component {
                                                             <strong className="fa-stack-1x icon-bot-text">0.1mm</strong>
                                                         </span>
                                                     </label>
-                                                    <label style={{ backgroundColor: '#F0F0F0' }} className="btn btn-jog btn-default" onClick={(e) => { this.changeStepsize(1) }} >
+                                                    <label style={{ backgroundColor: '#F0F0F0' }} className="btn btn-jog btn-secondary" onClick={(e) => { this.changeStepsize(1) }} >
                                                         <input type="radio" name="stp" defaultValue="1" />
                                                         <span className="fa-stack fa-1x">
                                                             <i className="fa fa-arrows-h fa-stack-1x"></i>
@@ -846,7 +845,7 @@ class Jog extends React.Component {
                                                             <strong className="fa-stack-1x icon-bot-text">1mm</strong>
                                                         </span>
                                                     </label>
-                                                    <label style={{ backgroundColor: '#E8E8E8' }} className="btn btn-jog btn-default" onClick={(e) => { this.changeStepsize(10) }} >
+                                                    <label style={{ backgroundColor: '#E8E8E8' }} className="btn btn-jog btn-secondary" onClick={(e) => { this.changeStepsize(10) }} >
                                                         <input type="radio" name="stp" defaultValue="10" />
                                                         <span className="fa-stack fa-1x">
                                                             <i className="fa fa-arrows-h fa-stack-1x"></i>
@@ -854,7 +853,7 @@ class Jog extends React.Component {
                                                             <strong className="fa-stack-1x icon-bot-text">10mm</strong>
                                                         </span>
                                                     </label>
-                                                    <label style={{ backgroundColor: '#E0E0E0' }} className="btn btn-jog btn-default" onClick={(e) => { this.changeStepsize(100) }} >
+                                                    <label style={{ backgroundColor: '#E0E0E0' }} className="btn btn-jog btn-secondary" onClick={(e) => { this.changeStepsize(100) }} >
                                                         <input type="radio" name="stp" defaultValue="100" />
                                                         <span className="fa-stack fa-1x">
                                                             <i className="fa fa-arrows-h fa-stack-1x"></i>
@@ -869,18 +868,18 @@ class Jog extends React.Component {
                                     <tr>
                                         <td colSpan="5">
                                             <div className="input-group">
-                                                <span className="input-group-addon">X/Y Jog</span>
+                                                <span className="input-group-text">X/Y Jog</span>
                                                 <Input id="jogfeedxy" type="number" className="form-control numpad input-sm text-right" value={this.state.jogFeedXY} onChangeValue={(e) => { this.changeJogFeedXY(e) }} />
-                                                <span className="input-group-addon"><small>{settings.toolFeedUnits}</small></span>
+                                                <span className="input-group-text"><small>{settings.toolFeedUnits}</small></span>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan="5">
                                             <div className="input-group">
-                                                <span className="input-group-addon">Z Jog </span>
+                                                <span className="input-group-text">Z Jog </span>
                                                 <Input id="jogfeedz" type="number" className="form-control numpad input-sm text-right" value={this.state.jogFeedZ} onChangeValue={(e) => { this.changeJogFeedZ(e) }} />
-                                                <span className="input-group-addon"><small>{settings.toolFeedUnits}</small></span>
+                                                <span className="input-group-text"><small>{settings.toolFeedUnits}</small></span>
                                             </div>
                                         </td>
                                     </tr>
@@ -895,7 +894,7 @@ class Jog extends React.Component {
                             </table>
                         </div>
 
-                        <div className="well well-sm" style={{ marginBottom: 7}} id="macrosBar"><MacrosBar /></div>
+                        <div className="bg-light p-2 border rounded" style={{ marginBottom: 7}} id="macrosBar"><MacrosBar /></div>
 
                         {settings.connectIP ? <FluidNCSDPrint settings={settings} /> : undefined}
 
@@ -978,12 +977,12 @@ class FluidNCSDPrint extends React.Component {
     render() {
         let { files, selected, loading, error } = this.state;
         return (
-            <div className="well well-sm" style={{ marginBottom: 7 }}>
+            <div className="bg-light p-2 border rounded" style={{ marginBottom: 7 }}>
                 <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
                     <i className="fa fa-hdd-o fa-fw" aria-hidden="true"></i>
                     {' FluidNC SD Print'}
                     <button
-                        className="btn btn-xs btn-default"
+                        className="btn btn-sm btn-secondary"
                         style={{ float: 'right' }}
                         onClick={this.loadFiles.bind(this)}
                         disabled={loading}
@@ -1003,7 +1002,6 @@ class FluidNCSDPrint extends React.Component {
                         {files.length === 0 && <option value="">{loading ? 'Loading…' : 'No files'}</option>}
                         {files.map(function(f) { return <option key={f} value={f}>{f}</option>; })}
                     </select>
-                    <span className="input-group-btn">
                         <button
                             className="btn btn-primary btn-sm"
                             onClick={this.runFile.bind(this)}
@@ -1012,7 +1010,6 @@ class FluidNCSDPrint extends React.Component {
                         >
                             <i className="fa fa-play" /> Run
                         </button>
-                    </span>
                 </div>
             </div>
         );
@@ -1085,7 +1082,7 @@ export class LiveJogging extends React.Component {
         return liveJoggingState.active && !liveJoggingState.disabled;
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         liveJoggingState = { active: nextProps.active, hasHomed: nextProps.hasHomed, disabled: nextProps.disabled };
     }
 
@@ -1096,7 +1093,7 @@ export class LiveJogging extends React.Component {
         }
 
         return <div className="toggleField">
-            <Toggle disabled={!this.props.hasHomed || this.props.disabled} id="toggle_liveJogging" checked={this.props.active} onChange={e => toggleLiveJogging(e.target.checked)} /><label htmlFor="toggle_liveJogging" title="Live jogging allows to travel pressing (ALT or META)+Click in the workspace. Prior homing mandatory. Use carefully."> Live Jogging {this.props.hasHomed ? '': <Label bsStyle="danger" title="Home all first!"><Icon name="home"/>Disabled</Label>}</label>
+            <Toggle disabled={!this.props.hasHomed || this.props.disabled} id="toggle_liveJogging" checked={this.props.active} onChange={e => toggleLiveJogging(e.target.checked)} /><label htmlFor="toggle_liveJogging" title="Live jogging allows to travel pressing (ALT or META)+Click in the workspace. Prior homing mandatory. Use carefully."> Live Jogging {this.props.hasHomed ? '': <Badge bg="danger" title="Home all first!"><Icon name="home"/>Disabled</Badge>}</label>
         </div>
 
     }

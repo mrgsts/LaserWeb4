@@ -16,7 +16,7 @@ import { MaterialDatabaseButton } from './material-database';
 import { Macros } from './macros'
 
 import { NumberField, TextField, ToggleField, QuadrantField, FileField, CheckBoxListField, SelectField, InputRangeField, Info } from './forms';
-import { PanelGroup, Panel, Tooltip, OverlayTrigger, FormControl, InputGroup, ControlLabel, FormGroup, ButtonGroup, Label, Collapse, Badge, ButtonToolbar, Button } from 'react-bootstrap';
+import { Accordion, Tooltip, OverlayTrigger, Form, InputGroup, ButtonGroup, Badge, Collapse, ButtonToolbar, Button } from 'react-bootstrap';
 import Icon from './font-awesome';
 
 import { VideoDeviceField, VideoPort, VideoResolutionField, ArucoMarker } from './webcam';
@@ -46,7 +46,7 @@ export class ApplicationSnapshot extends React.Component {
     render() {
         let data = Object.keys(omit(this.props.state, "history"));
         return (
-            <div className="well well-sm " id="ApplicationSnapshot">
+            <div className="bg-light p-2 border rounded" id="ApplicationSnapshot">
                 <CheckBoxListField onChange={(data) => this.handleChange(data)} data={data} />
                 <section>
                     <table style={{ width: 100 + '%' }}><tbody><tr><td><strong>On File</strong></td>
@@ -103,16 +103,16 @@ export class ApplicationSnapshotToolbar extends React.Component {
     render() {
         let buttons = [];
         if (this.props.loadButton) {
-            buttons.push(<FileField onChange={(e) => this.handleUpload(e.target.files[0], this.props.loadButton)} accept="application/json, .json"><Button bsStyle="danger" bsSize="xs">Load <Icon name="upload" /></Button></FileField>);
+            buttons.push(<FileField onChange={(e) => this.handleUpload(e.target.files[0], this.props.loadButton)} accept="application/json, .json"><Button variant="danger" size="sm">Load <Icon name="upload" /></Button></FileField>);
         }
         if (this.props.saveButton) {
-            buttons.push(<Button onClick={(e) => this.handleDownload(this.props.saveButton, this.props.saveName, e)} className="btn btn-success btn-xs">Save <Icon name="download" /></Button>);
+            buttons.push(<Button onClick={(e) => this.handleDownload(this.props.saveButton, this.props.saveName, e)} className="btn btn-success btn-sm">Save <Icon name="download" /></Button>);
         }
         if (this.props.recoverButton) {
-            buttons.push(<Button onClick={(e) => this.handleRecover(this.props.recoverButton)} bsClass="btn btn-danger btn-xs">Load <Icon name="upload" /></Button>);
+            buttons.push(<Button onClick={(e) => this.handleRecover(this.props.recoverButton)} className="btn btn-danger btn-sm">Load <Icon name="upload" /></Button>);
         }
         if (this.props.storeButton) {
-            buttons.push(<Button onClick={(e) => this.handleStore(this.props.storeButton)} bsClass="btn btn-success btn-xs">Save <Icon name="download" /></Button>);
+            buttons.push(<Button onClick={(e) => this.handleStore(this.props.storeButton)} className="btn btn-success btn-sm">Save <Icon name="download" /></Button>);
         }
 
         return <div>
@@ -124,11 +124,8 @@ export class ApplicationSnapshotToolbar extends React.Component {
 class SettingsPanel extends React.Component {
 
     render() {
-        let filterProps = omit(this.props, ['header', 'errors', 'defaultExpanded']);
         let childrenFields = this.props.children.map((item) => { if (item) return item.props.field })
         let hasErrors = Object.keys(this.props.errors || []).filter((error) => { return childrenFields.includes(error) }).length;
-
-        filterProps['defaultExpanded'] = (this.props.defaultExpanded || hasErrors) ? true : false
 
         let children = this.props.children.map((child, i) => {
             if (!child) return
@@ -137,9 +134,12 @@ class SettingsPanel extends React.Component {
             return React.cloneElement(child, props);
         })
 
-        let icon = hasErrors ? <Label bsStyle="warning">Please check!</Label> : undefined;
+        let icon = hasErrors ? <Badge bg="warning">Please check!</Badge> : undefined;
 
-        return <Panel {...filterProps} header={<span>{icon}{this.props.header}</span>} >{children}</Panel>
+        return <Accordion.Item eventKey={this.props.eventKey}>
+            <Accordion.Header>{icon}{this.props.header}</Accordion.Header>
+            <Accordion.Body>{children}</Accordion.Body>
+        </Accordion.Item>
     }
 
 }
@@ -163,7 +163,7 @@ class MachineFeedRanges extends React.Component {
         let axis = this.props.axis || ['X', 'Y'];
         let value = this.props.object[this.props.field];
         return <div className="form-group"><Details handler={<label>Machine feed ranges</label>}>
-            <div className="well">{this.props.description ? <small className="help-block">{this.props.description}</small> : undefined}
+            <div className="bg-light p-2 border rounded">{this.props.description ? <small className="form-text text-muted">{this.props.description}</small> : undefined}
                 <table width="100%" >
                     <tbody>
                         {axis.map((ax, i) => { return <tr key={i}><th width="15%">{ax}</th><td><InputRangeField normalize key={ax} minValue={this.props.minValue || 0} maxValue={this.props.maxValue || 1e100} value={value[ax]} onChangeValue={value => this.handleChangeValue(ax, value)} /></td></tr> })}
@@ -197,11 +197,11 @@ class Settings extends React.Component {
         return SETTINGS_VALIDATION_RULES;
     }
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.setState({ errors: this.validate(this.props.settings, this.rules()) })
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         this.setState({ errors: this.validate(nextProps.settings, this.rules()) })
     }
 
@@ -217,12 +217,15 @@ class Settings extends React.Component {
         return (
             <div className="form">
 
-                <PanelGroup>
-                    <Panel header="Machine Profiles" bsStyle="primary" collapsible defaultExpanded={true} eventKey="0">
+                <Accordion alwaysOpen defaultActiveKey={["0"]}>
+                    <Accordion.Item eventKey="0">
+                        <Accordion.Header>Machine Profiles</Accordion.Header>
+                        <Accordion.Body>
                         <MachineProfile onApply={this.props.handleApplyProfile} />
                         <MaterialDatabaseButton>Launch Material Database</MaterialDatabaseButton>
-                    </Panel>
-                    <SettingsPanel collapsible header="Machine" eventKey="1" bsStyle="info" errors={this.state.errors} >
+                        </Accordion.Body>
+                    </Accordion.Item>
+                    <SettingsPanel header="Machine" eventKey="1" errors={this.state.errors} >
                         <h5 className="header">Dimensions</h5>
                         <NumberField {...{ object: this.props.settings, field: 'machineWidth', setAttrs: setSettingsAttrs, description: 'Machine Width', units: 'mm' }} />
                         <NumberField {...{ object: this.props.settings, field: 'machineHeight', setAttrs: setSettingsAttrs, description: 'Machine Height', units: 'mm' }} />
@@ -260,14 +263,14 @@ class Settings extends React.Component {
                             </div>
                         </Collapse>
                     </SettingsPanel>
-                    <SettingsPanel collapsible header="File Settings" eventKey="2" bsStyle="info" errors={this.state.errors}>
+                    <SettingsPanel header="File Settings" eventKey="2" errors={this.state.errors}>
                         <h5 className="header">SVG</h5>
                         <NumberField {...{ object: this.props.settings, field: 'pxPerInch', setAttrs: setSettingsAttrs, description: 'PX Per Inch', units: 'pxpi' }} />
                         <ToggleField {...{ object: this.props.settings, field: 'forcePxPerInch', setAttrs: setSettingsAttrs, description: 'Force PX Per Inch' }} />
                         <h5 className="header">BITMAPS (bmp, png, jpg)</h5>
                         <NumberField {...{ object: this.props.settings, field: 'dpiBitmap', setAttrs: setSettingsAttrs, description: 'Bitmap DPI', units: 'dpi' }} />
                     </SettingsPanel>
-                    <SettingsPanel collapsible header="Gcode" eventKey="3" bsStyle="info" errors={this.state.errors}>
+                    <SettingsPanel header="Gcode" eventKey="3" errors={this.state.errors}>
                         <SelectField {...{ object: this.props.settings, field: 'gcodeGenerator', setAttrs: setSettingsAttrs, data: ['default', 'marlin'], defaultValue: 'default', description: 'GCode Generator', selectProps: { clearable: false } }} />
 
                         <TextField {...{ object: this.props.settings, field: 'gcodeStart', setAttrs: setSettingsAttrs, description: 'Gcode Start', rows: 5, style: { resize: "vertical" } }} />
@@ -283,15 +286,15 @@ class Settings extends React.Component {
                         <NumberField {...{ object: this.props.settings, field: 'gcodeToolTestPower', setAttrs: setSettingsAttrs, description: 'Tool Test Power', units: '%' }} />
                         <NumberField {...{ object: this.props.settings, field: 'gcodeToolTestDuration', setAttrs: setSettingsAttrs, description: 'Tool Test duration', units: 'ms' }} />
                         <h5 className="header">Gcode generation</h5>
-                        <NumberField {...{ object: this.props.settings, field: 'gcodeConcurrency', setAttrs: setSettingsAttrs, description: 'Gcode Generation threads', units: '', info: Info(<p className="help-block">Higher number of threads demands powerful host computer, but increases performance on large files with lots of operations.</p>,"Gcode threads") }} />
-                        <NumberField {...{ object: this.props.settings, field: 'gcodeCurvePrecision', setAttrs: setSettingsAttrs, description: 'Gcode Curve Linearization factor', units: '', info: Info(<p className="help-block">
+                        <NumberField {...{ object: this.props.settings, field: 'gcodeConcurrency', setAttrs: setSettingsAttrs, description: 'Gcode Generation threads', units: '', info: Info(<p className="form-text text-muted">Higher number of threads demands powerful host computer, but increases performance on large files with lots of operations.</p>,"Gcode threads") }} />
+                        <NumberField {...{ object: this.props.settings, field: 'gcodeCurvePrecision', setAttrs: setSettingsAttrs, description: 'Gcode Curve Linearization factor', units: '', info: Info(<p className="form-text text-muted">
                         Enter from 0.1 (Ultra High Precision - Slow) to 2.0 (Low Precision - Fast) to achieve different levels of curve to gcode performance
                         </p>,"Gcode Linearization Factor")} } />
                         
                     </SettingsPanel>
-                    <SettingsPanel collapsible header="Application" eventKey="4" bsStyle="info" errors={this.state.errors}>
+                    <SettingsPanel header="Application" eventKey="4" errors={this.state.errors}>
                         <h5 className="header">Grid</h5>
-                        <p className="help-block">Grid spacing requires app reload. Use with caution, will affect display performance</p>
+                        <p className="form-text text-muted">Grid spacing requires app reload. Use with caution, will affect display performance</p>
                         <NumberField {...{ object: this.props.settings, field: 'toolGridWidth', setAttrs: setSettingsAttrs, description: 'Grid Width', units: 'mm' }} />
                         <NumberField {...{ object: this.props.settings, field: 'toolGridHeight', setAttrs: setSettingsAttrs, description: 'Grid Height', units: 'mm' }} />
                         <NumberField {...{ object: this.props.settings, field: 'toolGridMinorSpacing', setAttrs: setSettingsAttrs, description: 'Grid Minor Spacing', units: 'mm' }} />
@@ -299,27 +302,29 @@ class Settings extends React.Component {
                         <hr/>
                         <SelectField {...{ object: this.props.settings, field: 'toolFeedUnits', setAttrs: setSettingsAttrs, data: ['mm/s', 'mm/min'], defaultValue: 'mm/min', description: 'Feed Units', selectProps: { clearable: false } }} />
                         <hr/> 
-                        <ToggleField {... { object: this.props.settings, field: 'toolUseNumpad', setAttrs: setSettingsAttrs, description: 'Use Numpad', info: Info(<p className="help-block">
-                        X <Label>4</Label> <Label>6</Label><br/>
-                        Y <Label>2</Label> <Label>8</Label><br/>
-                        Z <Label>+</Label> <Label>-</Label><br/>
-                        A <Label>*</Label> <Label>/</Label>
+                        <ToggleField {... { object: this.props.settings, field: 'toolUseNumpad', setAttrs: setSettingsAttrs, description: 'Use Numpad', info: Info(<p className="form-text text-muted">
+                        X <Badge>4</Badge> <Badge>6</Badge><br/>
+                        Y <Badge>2</Badge> <Badge>8</Badge><br/>
+                        Z <Badge>+</Badge> <Badge>-</Badge><br/>
+                        A <Badge>*</Badge> <Badge>/</Badge>
                         </p>,"Jog using Numpad")}} />
                         
-                        <ToggleField {... { object: this.props.settings, field: 'toolUseGamepad', setAttrs: setSettingsAttrs, description: 'Use Gamepad',info: Info(<p className="help-block">Gamepad for jogging. Use analog left stick (XY) or right stick (Z) to move on Jog tab.</p>) }} />
+                        <ToggleField {... { object: this.props.settings, field: 'toolUseGamepad', setAttrs: setSettingsAttrs, description: 'Use Gamepad',info: Info(<p className="form-text text-muted">Gamepad for jogging. Use analog left stick (XY) or right stick (Z) to move on Jog tab.</p>) }} />
                         <ToggleField {... { object: this.props.settings, field: 'toolCreateEmptyOps', setAttrs: setSettingsAttrs, description: 'Create Empty Operations' }} />
                         
                         <QuadrantField {... { object: this.props.settings, field: 'toolImagePosition', setAttrs: setSettingsAttrs, description: 'Raster Image Position' }} />
                         <hr/>
-                        <p className="help-block">Enable Display cache. Disable animations.</p>
+                        <p className="form-text text-muted">Enable Display cache. Disable animations.</p>
                         <ToggleField {... { object: this.props.settings, field: 'toolDisplayCache', setAttrs: setSettingsAttrs, description: 'Display Cache' }} />
                     </SettingsPanel>
 
-                    <Panel collapsible header="Camera" bsStyle="info" eventKey="6">
+                    <Accordion.Item eventKey="6">
+                        <Accordion.Header>Camera</Accordion.Header>
+                        <Accordion.Body>
 
                         <div id="novideodevices" style={{ display: "none" }}>
                             <h5 className="header">Video Device List Unavailable</h5>
-                            <small className="help-block">This may be due to running over an insecure connection, blocking in browser preferences, or other privacy protections.</small>
+                            <small className="form-text text-muted">This may be due to running over an insecure connection, blocking in browser preferences, or other privacy protections.</small>
                         </div>
 
                         <div id="localvideodevices">
@@ -329,8 +334,8 @@ class Settings extends React.Component {
 
                             </tr></tbody></table>
 
-                            <ToggleField  {... { object: this.props.settings, field: 'toolVideoOMR', setAttrs: setSettingsAttrs, description: 'Activate OMR', info: Info(<p className="help-block">
-                            Enabling this, ARUCO markers will be recognized by floating camera port, allowing stock alignment. <Label bsStyle="warning">Experimental!</Label>
+                            <ToggleField  {... { object: this.props.settings, field: 'toolVideoOMR', setAttrs: setSettingsAttrs, description: 'Activate OMR', info: Info(<p className="form-text text-muted">
+                            Enabling this, ARUCO markers will be recognized by floating camera port, allowing stock alignment. <Badge bg="warning">Experimental!</Badge>
                             </p>,"Optical Mark Recognition"), disabled:!this.props.settings['toolVideoDevice'] }} />
 
                             <Collapse in={this.props.settings.toolVideoOMR}>
@@ -349,29 +354,36 @@ class Settings extends React.Component {
 
                         <TextField   {... { object: this.props.settings, field: 'toolWebcamUrl', setAttrs: setSettingsAttrs, description: 'Webcam Url' }} disabled={this.props.settings['toolVideoDevice'] !== null} />
                         
-                    </Panel>
+                        </Accordion.Body>
+                    </Accordion.Item>
 
-                    <Panel collapsible header="Macros" bsStyle="info" eventKey="7">
+                    <Accordion.Item eventKey="7">
+                        <Accordion.Header>Macros</Accordion.Header>
+                        <Accordion.Body>
                         <Macros />
-                    </Panel>
+                        </Accordion.Body>
+                    </Accordion.Item>
 
-                    <Panel collapsible header="Tools" bsStyle="danger" eventKey="8" >
+                    <Accordion.Item eventKey="8">
+                        <Accordion.Header>Tools</Accordion.Header>
+                        <Accordion.Body>
                         <table style={{ width: 100 + '%' }}><tbody>
                             <tr><td><strong>Settings</strong></td>
                                 <td><ApplicationSnapshotToolbar loadButton saveButton stateKeys={['settings']} label="Settings" saveName="laserweb-settings.json" /><hr /></td></tr>
                             <tr><td><strong>Machine Profiles</strong></td>
                                 <td><ApplicationSnapshotToolbar loadButton saveButton stateKeys={['machineProfiles']} label="Machine Profiles" saveName="laserweb-profiles.json" /><hr /></td></tr>
                             <tr><td><strong>Macros</strong></td>
-                                <td><Button bsSize="xsmall" onClick={e => this.props.handleResetMacros()} bsStyle="warning">Reset</Button></td></tr>
+                                <td><Button size="sm" onClick={e => this.props.handleResetMacros()} variant="warning">Reset</Button></td></tr>
                         </tbody></table>
 
-                        <h5 >Application Snapshot  <Label bsStyle="warning">Caution!</Label></h5>
+                        <h5 >Application Snapshot  <Badge bg="warning">Caution!</Badge></h5>
 
 
-                        <small className="help-block">This dialog allows to save an entire snapshot of the current state of application.</small>
+                        <small className="form-text text-muted">This dialog allows to save an entire snapshot of the current state of application.</small>
                         <ApplicationSnapshot />
-                    </Panel>
-                </PanelGroup>
+                        </Accordion.Body>
+                    </Accordion.Item>
+                </Accordion>
             </div>
         );
 

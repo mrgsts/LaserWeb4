@@ -76,7 +76,7 @@ class About extends React.Component {
                 <div><i>LaserWeb and CNCWeb is <kbd>free software</kbd>. The team of developers have spent countless hours coding, testing and supporting this application. If you enjoy using this application, consider donating a coffee or a beer towards the developers to show your appreciation, by clicking the <Icon name="paypal"/> icon next to the developers you want to support</i></div>
 
                 <hr/>
-                <div className="well">
+                <div className="bg-light p-3 border rounded">
                   <h5>Application reset and debug</h5>
                   <Lifesaver/>
                 </div>
@@ -99,13 +99,13 @@ class Lifesaver extends React.Component
     render()
     {
         let button;
-        if (window.require) button = <Button bsSize="xs" bsStyle="warning" onClick={(e) => { this.props.handleDevTools(e) }}><Icon name="gear" /> Toggle Dev tools</Button>
+        if (window.require) button = <Button size="sm" variant="warning" onClick={(e) => { this.props.handleDevTools(e) }}><Icon name="gear" /> Toggle Dev tools</Button>
 
         return <ButtonToolbar>
           {button}
            <div className="form-group toggle-right"><Toggle defaultChecked={getDebug()} onChange={this.props.handleDebug} /><label>Enable debug logger</label></div>
-          <Button bsSize="xs" bsStyle="warning" onClick={(e) => { this.props.handleRefresh(e) }}><Icon name="refresh" /> Refresh window</Button>
-          <Button bsSize="xs" bsStyle="danger" onClick={(e) => { this.props.handleReset(e) }}><Icon name="bolt" /> Reset to factory defaults</Button>
+          <Button size="sm" variant="warning" onClick={(e) => { this.props.handleRefresh(e) }}><Icon name="refresh" /> Refresh window</Button>
+          <Button size="sm" variant="danger" onClick={(e) => { this.props.handleReset(e) }}><Icon name="bolt" /> Reset to factory defaults</Button>
         </ButtonToolbar>
     }
 }

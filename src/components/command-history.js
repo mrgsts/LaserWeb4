@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 
 import Icon from './font-awesome';
 import Splitter from './splitter'
-import { Button, Label } from 'react-bootstrap'
+import { Button, Badge } from 'react-bootstrap'
 import { dispatch, connect } from 'react-redux';
 
 import { isObject } from '../lib/helpers';
@@ -155,9 +155,9 @@ export default class CommandHistory extends React.Component {
                     <Icon name="terminal" fw={true} />
                     <input ref="input" type="text" placeholder="Use UP and DOWN on keyboard to cycle by commands, ENTER to execute." onChange={(e) => { this.handleChange(e) } } onKeyDown={e=>(this.handleKey(e))} value={this.state.currentLine} />
                     <div className="toolbar">
-                        <Button bsSize="xsmall" onClick={(e) => { this.handleCommandUp() } }><Icon name="arrow-up" fw={true} /></Button>
-                        <Button bsSize="xsmall" onClick={(e) => { this.handleCommandDown() } }><Icon name="arrow-down" fw={true} /></Button>
-                        <Button bsSize="xsmall" onClick={(e) => { this.handleCommandDelete() } } bsStyle="danger"><Icon name="times" fw={true} /></Button>
+                        <Button size="sm" onClick={(e) => { this.handleCommandUp() } }><Icon name="arrow-up" fw={true} /></Button>
+                        <Button size="sm" onClick={(e) => { this.handleCommandDown() } }><Icon name="arrow-down" fw={true} /></Button>
+                        <Button size="sm" onClick={(e) => { this.handleCommandDelete() } } variant="danger"><Icon name="times" fw={true} /></Button>
                     </div>
                 </div>
             </div>

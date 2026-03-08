@@ -1,14 +1,14 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import ReactDOM from 'react-dom';
-import { PanelGroup, Panel, Tooltip } from 'react-bootstrap';
+import { Accordion, Tooltip } from 'react-bootstrap';
 
 import Icon from './font-awesome'
 
 import { addMacro, removeMacro, setMacro, fireMacroById } from '../actions/macros'
 import { runCommand } from './com.js';
 
-import { Button, FormControl, ButtonGroup, ButtonToolbar } from 'react-bootstrap'
+import { Button, Form, ButtonGroup, ButtonToolbar } from 'react-bootstrap'
 
 import Validator from 'validatorjs';
 import { MACRO_VALIDATION_RULES } from '../reducers/macros'
@@ -97,19 +97,19 @@ export class Macros extends React.Component {
 
         return (
             <div className="macros">
-                <small className="help-block">Append new key binding to Gcode. App must be reloaded to take effect</small>
-                <FormControl componentClass="select" size="10" multiple onChange={(e) => this.handleSelection(e)} value={this.state.selected}>
+                <small className="form-text text-muted">Append new key binding to Gcode. App must be reloaded to take effect</small>
+                <Form.Select size="10" multiple onChange={(e) => this.handleSelection(e)} value={this.state.selected}>
                     {Object.entries(this.props.macros).map((opt, i) => { let [key, value] = opt; return <option key={i} value={key}>{(value.keybinding) ? `[${value.keybinding}] ` : ''}{value.label}</option> })}
-                </FormControl>
+                </Form.Select>
 
-                <FormControl type="text" ref="label" placeholder="Label" value={this.state.label} onChange={(e) => this.handleFormChange(e, 'label')} />
-                <FormControl type="text" ref="keybinding" placeholder="Keybinding" value={this.state.keybinding} onChange={(e) => this.handleFormChange(e, 'keybinding')} />
+                <Form.Control type="text" ref="label" placeholder="Label" value={this.state.label} onChange={(e) => this.handleFormChange(e, 'label')} />
+                <Form.Control type="text" ref="keybinding" placeholder="Keybinding" value={this.state.keybinding} onChange={(e) => this.handleFormChange(e, 'keybinding')} />
                 <ButtonGroup>
-                    {this.metakeys.map((meta, i) => { return <Button key={i} bsSize="xsmall" bsStyle={(this.state.keybinding.indexOf(meta) !== -1) ? 'primary' : 'default'} onClick={(e) => this.handleMeta(e, meta)}>{meta}</Button> })}
+                    {this.metakeys.map((meta, i) => { return <Button key={i} size="sm" variant={(this.state.keybinding.indexOf(meta) !== -1) ? 'primary' : 'secondary'} onClick={(e) => this.handleMeta(e, meta)}>{meta}</Button> })}
                 </ButtonGroup>
-                <FormControl componentClass="textarea" ref="gcode" placeholder="Gcode" value={this.state.gcode} onChange={(e) => this.handleFormChange(e, 'gcode')} />
-                <Button bsStyle="primary" disabled={(errors !== undefined) || this.state._locked} onClick={(e) => this.handleAppend(e)} style={{ float: "left" }} title={JSON.stringify(errors)}><Icon name="share" /> Set</Button>
-                <Button bsStyle="danger" disabled={this.state._locked} title={this.state._locked ? 'This is a locked macro' : undefined} onClick={(e) => this.handleRemove(e)} style={{ float: "right" }}><Icon name="trash" /> Remove</Button>
+                <Form.Control as="textarea" ref="gcode" placeholder="Gcode" value={this.state.gcode} onChange={(e) => this.handleFormChange(e, 'gcode')} />
+                <Button variant="primary" disabled={(errors !== undefined) || this.state._locked} onClick={(e) => this.handleAppend(e)} style={{ float: "left" }} title={JSON.stringify(errors)}><Icon name="share" /> Set</Button>
+                <Button variant="danger" disabled={this.state._locked} title={this.state._locked ? 'This is a locked macro' : undefined} onClick={(e) => this.handleRemove(e)} style={{ float: "right" }}><Icon name="trash" /> Remove</Button>
             </div>
 
         )
@@ -129,7 +129,7 @@ export class MacrosBar extends React.Component {
             <ButtonToolbar>
                 {Object.entries(this.props.macros).map((macro, i) => {
                     let [id, data] = macro;
-                    return <Button key={i} bsSize="small" onClick={(e) => this.handleRunMacro(id, this.props.macros)} title={"[" + data.keybinding + "]"}>{data.label}</Button>
+                    return <Button key={i} size="sm" onClick={(e) => this.handleRunMacro(id, this.props.macros)} title={"[" + data.keybinding + "]"}>{data.label}</Button>
                 })
                 }
             </ButtonToolbar>

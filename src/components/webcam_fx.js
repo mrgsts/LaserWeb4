@@ -170,7 +170,7 @@ export class Coordinator extends React.Component {
             this.props.onStop(this.state.position)
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         this.setState({ position: nextProps.position.map(parseFloat) })
     }
 
@@ -229,7 +229,7 @@ export class PerspectiveWebcam extends React.Component {
             this.props.onStop(this.state);
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         this.setState({ ...nextProps.perspective })
     }
 
@@ -326,7 +326,7 @@ export class VideoControls extends React.Component {
             this.props.onChange(state);
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         let { width, height } = getSizeByVideoResolution(nextProps.videoHeight, nextProps.resolution)
         this.setState({
             lens: nextProps.lens,
@@ -343,7 +343,7 @@ export class VideoControls extends React.Component {
                 <caption>Perspective</caption>
                 <tbody>
                     <tr>
-                        <th>Enable</th><td colSpan="2"><Toggle checked={enabled} onChange={e => this.handlePerspectiveToggle(e)} /></td><td colSpan="6"><Button bsStyle="warning" onClick={e => this.handlePerspectiveReset()}>Reset</Button></td>
+                        <th>Enable</th><td colSpan="2"><Toggle checked={enabled} onChange={e => this.handlePerspectiveToggle(e)} /></td><td colSpan="6"><Button variant="warning" onClick={e => this.handlePerspectiveReset()}>Reset</Button></td>
                     </tr>
                     <tr><th>Before</th>
                         {before.map((value, i) => {

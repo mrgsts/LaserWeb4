@@ -14,6 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import { convertOutlineToThickLines } from '../draw-commands/thick-lines'
 import { filterClosedRawPaths, triangulateRawPaths } from '../lib/mesh';
@@ -34,11 +35,11 @@ export class DocumentCacheHolder extends React.Component {
         return { documentCacheHolder: this };
     }
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.setDocuments(this.props.documents);
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
         this.setDocuments(nextProps.documents);
     }
 
@@ -159,7 +160,7 @@ export class DocumentCacheHolder extends React.Component {
     }
 };
 DocumentCacheHolder.childContextTypes = {
-    documentCacheHolder: React.PropTypes.any,
+    documentCacheHolder: PropTypes.any,
 };
 
 export function withDocumentCache(Component) {
@@ -171,7 +172,7 @@ export function withDocumentCache(Component) {
         }
     };
     Wrapper.contextTypes = {
-        documentCacheHolder: React.PropTypes.any,
+        documentCacheHolder: PropTypes.any,
     };
     return Wrapper;
 }

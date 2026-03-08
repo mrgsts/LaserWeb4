@@ -14,6 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const eventNames = [
     'onClick', 'onContextMenu', 'onDoubleClick', 'onDrag',
@@ -23,7 +24,7 @@ const eventNames = [
 ];
 
 export class AllowCapture extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.events = {};
         for (let n of eventNames) {
             this.events[n + 'Capture'] = e => {
@@ -73,11 +74,11 @@ export class AllowCapture extends React.Component {
     }
 };
 AllowCapture.childContextTypes = {
-    allowCapture: React.PropTypes.any,
+    allowCapture: PropTypes.any,
 };
 
 export default class Capture extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.onMouseDown = this.onMouseDown.bind(this);
     }
 
@@ -99,5 +100,5 @@ export default class Capture extends React.Component {
     }
 };
 Capture.contextTypes = {
-    allowCapture: React.PropTypes.any,
+    allowCapture: PropTypes.any,
 };

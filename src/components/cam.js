@@ -55,7 +55,7 @@ function NoDocumentsError(props) {
 }
 
 function GcodeProgress({ gcoding, onStop }) {
-    return <div style={{ display: "flex", flexDirection: "row" }}><ProgressBar now={gcoding.percent} active={gcoding.enable} label={`${gcoding.percent}%`} style={{ flexGrow: 1, marginBottom: "0px" }} /><Button onClick={onStop} bsSize="xs" bsStyle="danger"><Icon name="hand-paper-o" /></Button></div>
+    return <div style={{ display: "flex", flexDirection: "row" }}><ProgressBar now={gcoding.percent} animated={gcoding.enable} label={`${gcoding.percent}%`} style={{ flexGrow: 1, marginBottom: "0px" }} /><Button onClick={onStop} size="sm" variant="danger"><Icon name="hand-paper-o" /></Button></div>
 }
 
 GcodeProgress = connect((state) => { return { gcoding: state.gcode.gcoding } })(GcodeProgress)
@@ -80,7 +80,7 @@ class Cam extends React.Component {
         this.state={filter:null}
     }
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         let that = this
         window.generateGcode = e => {
             let { settings, documents, operations } = that.props;
@@ -139,8 +139,8 @@ class Cam extends React.Component {
         
         return (
             <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div className="panel panel-danger" style={{ marginBottom: 0 }}>
-                    <div className="panel-heading" style={{ padding: 2 }}>
+                <div className="card border-danger" style={{ marginBottom: 0 }}>
+                    <div className="card-header cam-card-header" style={{ padding: 2, backgroundColor: '#7B241C', color: '#fff' }}>
                         <table style={{ width: 100 + '%' }}>
                             <tbody>
                                 <tr>
@@ -148,8 +148,8 @@ class Cam extends React.Component {
                                         <label>Workspace</label>
                                     </td>
                                     <td>
-                                        <ApplicationSnapshotToolbar loadButton saveButton stateKeys={['documents', 'operations', 'currentOperation', 'settings.toolFeedUnits']} saveName="Laserweb-Workspace.json" label="Workspace" className="well well-sm">
-                                            <Button bsSize="xsmall" bsStyle="warning" onClick={e => this.props.resetWorkspace(e)}>Reset <Icon name="trash" /></Button>
+                                        <ApplicationSnapshotToolbar loadButton saveButton stateKeys={['documents', 'operations', 'currentOperation', 'settings.toolFeedUnits']} saveName="Laserweb-Workspace.json" label="Workspace" className="bg-light p-2 border rounded">
+                                            <Button size="sm" variant="warning" onClick={e => this.props.resetWorkspace(e)}>Reset <Icon name="trash" /></Button>
                                         </ApplicationSnapshotToolbar>
                                     </td>
                                 </tr>
@@ -158,8 +158,8 @@ class Cam extends React.Component {
                     </div>
                 </div>
                 <div className="Resizer horizontal" style={{ marginTop: '2px', marginBottom: '2px' }}></div>
-                <div className="panel panel-info" style={{ marginBottom: 3 }}>
-                    <div className="panel-heading" style={{ padding: 2 }}>
+                <div className="card border-info" style={{ marginBottom: 3 }}>
+                    <div className="card-header text-bg-info cam-card-header" style={{ padding: 2 }}>
                         <table style={{ width: 100 + '%' }}>
                             <tbody>
                                 <tr>
@@ -169,7 +169,7 @@ class Cam extends React.Component {
                                     <td style={{display:"flex", justifyContent: "flex-end" }}>
                                         
                                         <FileField style={{   position: 'relative', cursor: 'pointer' }} onChange={loadDocument} accept={DOCUMENT_FILETYPES}>
-                                            <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-xs btn-primary"><i className="fa fa-fw fa-folder-open" />Add Document</button>
+                                            <button title="Add a DXF/SVG/PNG/BMP/JPG document to the document tree" className="btn btn-sm btn-primary"><i className="fa fa-fw fa-folder-open" />Add Document</button>
                                             {(this.props.panes.visible) ? <NoDocumentsError camBounds={bounds} settings={settings} documents={documents} operations={operations} /> : undefined}
                                         </FileField>&nbsp;
                                     </td>
@@ -222,39 +222,39 @@ class Cam extends React.Component {
                                 </div>
                             );
                         })()}
-                        {documents.length ? <ButtonToolbar bsSize="xsmall" bsStyle="default">
+                        {documents.length ? <ButtonToolbar>
                             
                             <ButtonGroup>
-                                <Button  bsStyle="info" bsSize="xsmall" onClick={e=>{this.props.dispatch(selectDocuments(true))}} title="Select all"><Icon name="cubes"/></Button>
-                                <Button  bsStyle="default" bsSize="xsmall" onClick={e=>{this.props.dispatch(selectDocuments(false))}} title="Select none"><Icon name="cubes"/></Button>
+                                <Button  variant="info" size="sm" onClick={e=>{this.props.dispatch(selectDocuments(true))}} title="Select all"><Icon name="cubes"/></Button>
+                                <Button  variant="secondary" size="sm" onClick={e=>{this.props.dispatch(selectDocuments(false))}} title="Select none"><Icon name="cubes"/></Button>
                             </ButtonGroup>
-                            <Button  bsStyle="warning" bsSize="xsmall" disabled={!someSelected} onClick={e=>{this.props.dispatch(cloneDocumentSelected())}} title="Clone selected"><Icon name="copy"/></Button>
-                            <Button  bsStyle="danger" bsSize="xsmall" disabled={!someSelected} onClick={e=>{this.props.dispatch(removeDocumentSelected())}} title="Remove selected"><Icon name="trash"/></Button>
+                            <Button  variant="warning" size="sm" disabled={!someSelected} onClick={e=>{this.props.dispatch(cloneDocumentSelected())}} title="Clone selected"><Icon name="copy"/></Button>
+                            <Button  variant="danger" size="sm" disabled={!someSelected} onClick={e=>{this.props.dispatch(removeDocumentSelected())}} title="Remove selected"><Icon name="trash"/></Button>
                             <ButtonGroup>
-                                <ColorPicker to="rgba" icon="pencil" bsSize="xsmall" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({strokeColor:v||[0,0,0,1]}))}/>
-                                <ColorPicker to="rgba" icon="paint-brush" bsSize="xsmall" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({fillColor:v||[0,0,0,0]}))}/>
+                                <ColorPicker to="rgba" icon="pencil" size="sm" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({strokeColor:v||[0,0,0,1]}))}/>
+                                <ColorPicker to="rgba" icon="paint-brush" size="sm" disabled={!someSelected} onClick={v=>this.props.dispatch(colorDocumentSelected({fillColor:v||[0,0,0,0]}))}/>
                             </ButtonGroup>
-                            <SearchButton bsStyle="primary" bsSize="xsmall" search={this.state.filter} onSearch={filter=>{this.setState({filter})}} placement="bottom"><Icon name="search"/></SearchButton>
+                            <SearchButton variant="primary" size="sm" search={this.state.filter} onSearch={filter=>{this.setState({filter})}} placement="bottom"><Icon name="search"/></SearchButton>
                             </ButtonToolbar>:undefined}
                     </div>
                 </Splitter>
-                <Alert bsStyle="success" style={{ padding: "4px", marginBottom: 7 }}>
+                <Alert variant="success" className="cam-card-header" style={{ padding: "4px", marginBottom: 7 }}>
                     <table style={{ width: 100 + '%' }}>
                         <tbody>
                             <tr>
                                 <th>GCODE</th>
                                 <td style={{ width: "80%", textAlign: "right" }}>{!this.props.gcoding.enable ? (
                                     <ButtonToolbar style={{ float: "right" }}>
-                                        <button title="Generate G-Code from Operations below" className={"btn btn-xs btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
+                                        <button title="Generate G-Code from Operations below" className={"btn btn-sm btn-attention " + (this.props.dirty ? 'btn-warning' : 'btn-primary')} disabled={!valid || this.props.gcoding.enable} onClick={(e) => this.generateGcode(e)}><i className="fa fa-fw fa-industry" />&nbsp;Generate</button>
                                         <ButtonGroup>
-                                            <button title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
-                                            <button title="Export G-code to File" className="btn btn-success btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
+                                            <button title="View generated G-Code. Please disable popup blockers" className="btn btn-info btn-sm" disabled={!valid || this.props.gcoding.enable} onClick={this.props.viewGcode}><i className="fa fa-eye" /></button>
+                                            <button title="Export G-code to File" className="btn btn-success btn-sm" disabled={!valid || this.props.gcoding.enable} onClick={this.props.saveGcode}><i className="fa fa-floppy-o" /></button>
                                             <FileField onChange={this.props.loadGcode} disabled={!valid || this.props.gcoding.enable} accept=".gcode,.gc,.nc">
-                                                <button title="Load G-Code from File" className="btn btn-danger btn-xs" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
+                                                <button title="Load G-Code from File" className="btn btn-danger btn-sm" disabled={!valid || this.props.gcoding.enable} ><i className="fa fa-folder-open" /></button>
                                             </FileField>
                                         </ButtonGroup>
-                                        <button title="Upload G-Code to FluidNC SD" className="btn btn-default btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.uploadGcodeFluidNC}><i className="fa fa-cloud-upload" /></button>
-                                        <button title="Clear" className="btn btn-warning btn-xs" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
+                                        <button title="Upload G-Code to FluidNC SD" className="btn btn-secondary btn-sm" disabled={!valid || this.props.gcoding.enable} onClick={this.props.uploadGcodeFluidNC}><i className="fa fa-cloud-upload" /></button>
+                                        <button title="Clear" className="btn btn-warning btn-sm" disabled={!valid || this.props.gcoding.enable} onClick={this.props.clearGcode}><i className="fa fa-trash" /></button>
                                     </ButtonToolbar>) : <GcodeProgress onStop={(e) => this.stopGcode(e)} />}</td>
                             </tr>
                         </tbody>

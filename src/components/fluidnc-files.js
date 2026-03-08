@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { PanelGroup, Panel, Button, ButtonGroup, ButtonToolbar, ProgressBar, Label, Badge, Alert } from 'react-bootstrap';
+import { Accordion, Button, ButtonGroup, ButtonToolbar, ProgressBar, Badge, Alert } from 'react-bootstrap';
 import Icon from './font-awesome';
 import { TextField } from './forms';
 import { setSettingsAttrs } from '../actions/settings';
@@ -355,8 +355,10 @@ class FluidNCFiles extends React.Component {
 
         return (
             <div style={{ padding: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <PanelGroup>
-                    <Panel collapsible header="FluidNC File Manager" bsStyle="primary" eventKey="1" defaultExpanded={true}>
+                <Accordion alwaysOpen defaultActiveKey={["1"]}>
+                    <Accordion.Item eventKey="1">
+                        <Accordion.Header>FluidNC File Manager</Accordion.Header>
+                        <Accordion.Body>
 
                         {/* IP display */}
                         <div style={{ marginBottom: 6 }}>
@@ -364,11 +366,11 @@ class FluidNCFiles extends React.Component {
                         </div>
 
                         {/* Volume selector */}
-                        <ButtonGroup bsSize="xsmall" style={{ marginBottom: 6 }}>
-                            <Button bsStyle={volume === 'sd' ? 'primary' : 'default'} onClick={() => this.setVolume('sd')}>
+                        <ButtonGroup size="sm" style={{ marginBottom: 6 }}>
+                            <Button variant={volume === 'sd' ? 'primary' : 'secondary'} onClick={() => this.setVolume('sd')}>
                                 <Icon name="hdd-o" /> SD Card
                             </Button>
-                            <Button bsStyle={volume === 'localfs' ? 'primary' : 'default'} onClick={() => this.setVolume('localfs')}>
+                            <Button variant={volume === 'localfs' ? 'primary' : 'secondary'} onClick={() => this.setVolume('localfs')}>
                                 <Icon name="microchip" /> LocalFS
                             </Button>
                         </ButtonGroup>
@@ -377,34 +379,34 @@ class FluidNCFiles extends React.Component {
                         {total > 0 && (
                             <div style={{ marginBottom: 6 }}>
                                 <small>Storage: {formatSize(used)} / {formatSize(total)} ({usedPercent}%)</small>
-                                <ProgressBar now={usedPercent} bsStyle={usedPercent > 90 ? 'danger' : usedPercent > 70 ? 'warning' : 'success'} style={{ height: 6, marginBottom: 0 }} />
+                                <ProgressBar now={usedPercent} variant={usedPercent > 90 ? 'danger' : usedPercent > 70 ? 'warning' : 'success'} style={{ height: 6, marginBottom: 0 }} />
                             </div>
                         )}
 
                         {/* Path navigation */}
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
-                            <ButtonGroup bsSize="xsmall">
+                            <ButtonGroup size="sm">
                                 <Button onClick={() => this.navigateRoot()} title="Go to root"><Icon name="home" /></Button>
                                 <Button onClick={() => this.navigateUp()} disabled={path === '/'} title="Go up"><Icon name="level-up" /></Button>
                                 <Button onClick={() => this.refreshFiles()} title="Refresh"><Icon name="refresh" /></Button>
                             </ButtonGroup>
-                            <Label bsStyle="default" style={{ marginLeft: 6, fontFamily: 'monospace', fontSize: '11px' }}>
+                            <Badge bg="secondary" style={{ marginLeft: 6, fontFamily: 'monospace', fontSize: '11px' }}>
                                 {volume === 'sd' ? 'SD' : 'LocalFS'}:{path}
-                            </Label>
+                            </Badge>
                         </div>
 
                         {/* Toolbar */}
                         <ButtonToolbar style={{ marginBottom: 6 }}>
-                            <ButtonGroup bsSize="xsmall">
-                                <Button bsStyle="success" onClick={() => this.handleUploadClick()} title="Upload file">
+                            <ButtonGroup size="sm">
+                                <Button variant="success" onClick={() => this.handleUploadClick()} title="Upload file">
                                     <Icon name="upload" /> Upload
                                 </Button>
                                 {volume === 'sd' && (
-                                    <Button bsStyle="info" onClick={() => this.handleCreateDir()} title="Create directory">
+                                    <Button variant="info" onClick={() => this.handleCreateDir()} title="Create directory">
                                         <Icon name="folder-o" /> New Dir
                                     </Button>
                                 )}
-                                <Button bsStyle="warning" onClick={() => this.handleUploadGcode()} disabled={!hasGcode || !ip} title="Upload current G-Code to FluidNC SD">
+                                <Button variant="warning" onClick={() => this.handleUploadGcode()} disabled={!hasGcode || !ip} title="Upload current G-Code to FluidNC SD">
                                     <Icon name="cloud-upload" /> Send GCode
                                 </Button>
                             </ButtonGroup>
@@ -414,7 +416,7 @@ class FluidNCFiles extends React.Component {
                         {uploadProgress >= 0 && (
                             <div style={{ marginBottom: 6 }}>
                                 <small>Uploading: {uploadFilename}</small>
-                                <ProgressBar now={uploadProgress} active label={uploadProgress + '%'} style={{ height: 16, marginBottom: 0 }} />
+                                <ProgressBar now={uploadProgress} animated label={uploadProgress + '%'} style={{ height: 16, marginBottom: 0 }} />
                             </div>
                         )}
 
@@ -429,7 +431,7 @@ class FluidNCFiles extends React.Component {
 
                         {/* Error */}
                         {error && (
-                            <Alert bsStyle="danger" style={{ padding: 4, marginBottom: 4, fontSize: '12px' }}>
+                            <Alert variant="danger" style={{ padding: 4, marginBottom: 4, fontSize: '12px' }}>
                                 {error}
                             </Alert>
                         )}
@@ -447,7 +449,7 @@ class FluidNCFiles extends React.Component {
                             onDragOver={(e) => this.handleDragOver(e)}
                             onDrop={(e) => this.handleDrop(e)}
                         >
-                            <table className="table table-condensed table-hover" style={{ marginBottom: 0, fontSize: '12px' }}>
+                            <table className="table table-sm table-hover" style={{ marginBottom: 0, fontSize: '12px' }}>
                                 <thead>
                                     <tr>
                                         <th style={{ width: '20px' }}></th>
@@ -484,13 +486,13 @@ class FluidNCFiles extends React.Component {
                                                     {isDir ? '' : formatSize(file.size)}
                                                 </td>
                                                 <td style={{ textAlign: 'center' }}>
-                                                    <ButtonGroup bsSize="xsmall">
+                                                    <ButtonGroup size="sm">
                                                         {!isDir && (
-                                                            <Button bsStyle="info" onClick={() => this.handleDownload(file)} title="Download">
+                                                            <Button variant="info" onClick={() => this.handleDownload(file)} title="Download">
                                                                 <Icon name="download" />
                                                             </Button>
                                                         )}
-                                                        <Button bsStyle="danger" onClick={() => this.handleDelete(file)} title="Delete">
+                                                        <Button variant="danger" onClick={() => this.handleDelete(file)} title="Delete">
                                                             <Icon name="trash" />
                                                         </Button>
                                                     </ButtonGroup>
@@ -507,8 +509,9 @@ class FluidNCFiles extends React.Component {
                             <Icon name="cloud-upload" /> Drag &amp; drop files here to upload
                         </div>
 
-                    </Panel>
-                </PanelGroup>
+                        </Accordion.Body>
+                    </Accordion.Item>
+                </Accordion>
             </div>
         );
     }

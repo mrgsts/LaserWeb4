@@ -39,7 +39,7 @@ export function selectedDocuments(documents) {
 }
 
 class DocumentLabel extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
@@ -159,12 +159,12 @@ function DocumentRight({object, dispatch}) {
     return (
         <div className="btn-group">
             <button
-                className="btn btn-default btn-xs"
+                className="btn btn-secondary btn-sm"
                 onClick={e => dispatch(toggleVisibleDocument(object.id))}>
                 <Icon name={(object.visible === true || object.visible === undefined) ? "eye" : "eye-slash"} />
             </button>
             <button
-                className="btn btn-danger btn-xs"
+                className="btn btn-danger btn-sm"
                 onClick={e => dispatch(removeDocument(object.id))}>
                 <i className="fa fa-times"></i>
             </button>

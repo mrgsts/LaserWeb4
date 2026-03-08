@@ -84,16 +84,14 @@ function RangeInput(minValue, maxValue) {
 
 function TagInput(statekey, opts = { multi: true, simpleValue: true, delimiter: ',', clearable: true }, connector) {
     if (!connector) connector = (state) => { return { options: Object.entries(getDescendantProp(state, statekey)).map(i => { return { label: i[1].label, value: i[0] } }) } }
-    return connect(connector)(React.createClass({
-        render: function () {
-            return <Select options={this.props.options} value={this.props.op[this.props.field.name]} onChange={e => this.props.onChangeValue(e)} {...{ ...opts }} />
-        }
-    }))
+    return connect(connector)(function TagInputComponent(props) {
+        return <Select options={props.options} value={props.op[props.field.name]} onChange={e => props.onChangeValue(e)} {...{ ...opts }} />
+    })
 
 }
 
 function ButtonInput(args) {
-    return <Button onClick={e => args.field.onClick(e, args)} bsSize="xsmall" bsStyle="info" >{args.field.buttonLabel}</Button>;
+    return <Button onClick={e => args.field.onClick(e, args)} size="sm" variant="info" >{args.field.buttonLabel}</Button>;
 }
 
 function TableInput({ op, field, operationsBounds, fillColors, strokeColors, settings, dispatch }) {
@@ -111,7 +109,7 @@ function TableInput({ op, field, operationsBounds, fillColors, strokeColors, set
                 }} />
             </td>)}
             <td>
-                <button className="btn btn-default btn-xs" onClick={e => dispatch(remove(item.id))}>
+                <button className="btn btn-secondary btn-sm" onClick={e => dispatch(remove(item.id))}>
                     <i className="fa fa-trash"></i>
                 </button>
             </td>
@@ -127,7 +125,7 @@ function ColorBox(v) {
 }
 
 class FilterInput extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.onChange = this.onChange.bind(this);
     }
 
@@ -179,7 +177,7 @@ function NoOperationsError(props) {
 }
 
 class Field extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.onChangeValue = this.onChangeValue.bind(this);
         this.onChange = this.onChange.bind(this);
         this.onFocus = this.onFocus.bind(this);
@@ -252,7 +250,7 @@ class Field extends React.Component {
 };
 
 class Doc extends React.Component {
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.remove = e => {
             this.props.dispatch(operationRemoveDocument(this.props.op.id, this.props.isTab, this.props.id));
         }
@@ -266,7 +264,7 @@ class Doc extends React.Component {
                     └ <a style={{ userSelect: 'none', cursor: 'pointer', textDecoration: 'bold', color: '#FFF', paddingLeft: 5, paddingRight: 5, paddingBottom: 3, backgroundColor: '#337AB7', border: '1px solid', borderColor: '#2e6da4', borderRadius: 2 }} onClick={(e) => { this.props.dispatch(selectDocument(id)) }}>{documents.find(d => d.id === id).name}</a>
                 </td>
                 <td>
-                    <button className="btn btn-default btn-xs" onClick={this.remove}>
+                    <button className="btn btn-secondary btn-sm" onClick={this.remove}>
                         <i className="fa fa-trash"></i>
                     </button>
                 </td>
@@ -665,7 +663,7 @@ const traverseDocumentTypes = (ids, documents) => {
 
 class Operation extends React.Component {
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
         this.setType = e => this.props.dispatch(setOperationAttrs({ type: e.target.value }, this.props.op.id));
         this.setTypeString = e => this.props.dispatch(setOperationAttrs({ type: e }, this.props.op.id));
         this.toggleExpanded = e => this.props.dispatch(setOperationAttrs({ expanded: !this.props.op.expanded }, this.props.op.id));
@@ -682,7 +680,7 @@ class Operation extends React.Component {
         this.operationGroups = groupFields(OPERATION_TYPES[this.props.op.type].fields)
     }
 
-    componentWillReceiveProps(nextProps) {
+    UNSAFE_componentWillReceiveProps(nextProps) {
 
         if (nextProps.op.documents.length !== this.documentsCount) {
             this.documentsCount = nextProps.op.documents.length
@@ -740,14 +738,14 @@ class Operation extends React.Component {
 
                         <div style={{ whiteSpace: 'nowrap' }}>
                             <select className="input-xs" value={op.type} onChange={this.setType}>{Object.keys(OPERATION_TYPES).map(type => <option key={type} disabled={!this.availableOps.includes(type)}>{type}</option>)}</select>
-                            <MaterialPickerButton className="btn btn-success btn-xs" onApplyPreset={this.preset} operation={op} types={this.availableOps}><i className="fa fa-magic"></i></MaterialPickerButton>
-                            <MaterialSaveButton className="btn btn-success btn-xs" onApplyPreset={this.preset} operation={op} types={this.availableOps}><i className="fa fa-floppy-o"></i></MaterialSaveButton>
+                            <MaterialPickerButton className="btn btn-success btn-sm" onApplyPreset={this.preset} operation={op} types={this.availableOps}><i className="fa fa-magic"></i></MaterialPickerButton>
+                            <MaterialSaveButton className="btn btn-success btn-sm" onApplyPreset={this.preset} operation={op} types={this.availableOps}><i className="fa fa-floppy-o"></i></MaterialSaveButton>
                         </div>
                         <div className="btn-group">
-                            <button className={"btn btn-warning btn-xs " + (op.enabled ? '' : 'btn-off')} onClick={this.toggleEnabled} title="Enable/Disable operation"><i className="fa fa-power-off"></i></button>
-                            <button className="btn btn-default btn-xs " onClick={this.moveUp}><i className="fa fa-arrow-up"></i></button>
-                            <button className="btn btn-default btn-xs" onClick={this.moveDn}><i className="fa fa-arrow-down"></i></button>
-                            <button className="btn btn-danger btn-xs" onClick={this.remove}><i className="fa fa-times"></i></button>
+                            <button className={"btn btn-warning btn-sm " + (op.enabled ? '' : 'btn-off')} onClick={this.toggleEnabled} title="Enable/Disable operation"><i className="fa fa-power-off"></i></button>
+                            <button className="btn btn-secondary btn-sm " onClick={this.moveUp}><i className="fa fa-arrow-up"></i></button>
+                            <button className="btn btn-secondary btn-sm" onClick={this.moveDn}><i className="fa fa-arrow-down"></i></button>
+                            <button className="btn btn-danger btn-sm" onClick={this.remove}><i className="fa fa-times"></i></button>
                         </div>
                     </span>
                     {error}
@@ -949,9 +947,9 @@ class OperationToolbar extends React.Component {
         let hasSelected = this.props.documents.some((item) => item.selected)
         let settings = this.props.settings;
         return <ButtonToolbar style={{ paddingBottom: "5px", marginBottom: "5px", borderBottom: "1px solid #eee" }}>
-            <Button disabled={!hasSelected && !settings.toolCreateEmptyOps} onClick={(e) => { this.handleAddSingle() }} bsSize="xsmall" bsStyle="info" title="Create a single operation with the selected documents"><Icon name="object-group" /> Create Single </Button>
-            <Button disabled={!hasSelected} onClick={(e) => { this.handleAddMultiple() }} bsSize="xsmall" bsStyle="info" title="Create operations with each of the selected documents"><Icon name="object-ungroup" /> Create Multiple </Button>
-            <Button disabled={!this.props.operations.length} onClick={e => this.handleClearAll()} bsStyle="danger" bsSize="xsmall" title="Clear all operations" >Clear All</Button>
+            <Button disabled={!hasSelected && !settings.toolCreateEmptyOps} onClick={(e) => { this.handleAddSingle() }} size="sm" variant="info" title="Create a single operation with the selected documents"><Icon name="object-group" /> Create Single </Button>
+            <Button disabled={!hasSelected} onClick={(e) => { this.handleAddMultiple() }} size="sm" variant="info" title="Create operations with each of the selected documents"><Icon name="object-ungroup" /> Create Multiple </Button>
+            <Button disabled={!this.props.operations.length} onClick={e => this.handleClearAll()} variant="danger" size="sm" title="Clear all operations" >Clear All</Button>
         </ButtonToolbar>
     }
 }
