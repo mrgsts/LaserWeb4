@@ -8,7 +8,7 @@ var dist_path = path.resolve('./dist');
 module.exports = {
     mode: 'development',
     context: src_path,
-    entry: ['@babel/polyfill', './index.js'],
+    entry: ['core-js/stable', './index.js'],
     output: {
         path: dist_path,
         filename: 'index.js'
@@ -43,12 +43,11 @@ module.exports = {
                         plugins: [
                             '@babel/plugin-transform-destructuring',
                             '@babel/plugin-transform-parameters',
-                            '@babel/plugin-proposal-object-rest-spread',
+                            '@babel/plugin-transform-object-rest-spread',
                             '@babel/plugin-transform-modules-commonjs',
-                            '@babel/plugin-proposal-class-properties',
+                            '@babel/plugin-transform-class-properties',
                             '@babel/plugin-transform-private-methods',
-                            '@babel/plugin-transform-optional-chaining',
-                            'react-hot-loader/babel'
+                            '@babel/plugin-transform-optional-chaining'
                         ]
                     }
                 }

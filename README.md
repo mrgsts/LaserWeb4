@@ -67,6 +67,8 @@ This is a fork of the original [LaserWeb4](https://github.com/LaserWeb/LaserWeb4
   - Inline `style` props corrected for React 16 (`class` → `className`, boolean `is` attribute removed, invalid HTML elements such as `<heading>` replaced).
   - jQuery dependency removed from component code (Bootstrap 5 no longer requires jQuery).
 
+- **Deprecated module cleanup** — Removed all deprecated and end-of-life NPM packages.
+
 ---
 
 This repository is a "development environment" - and no regular user would have to touch this at all (dont download the repo from here, use the Download links below)

@@ -14,7 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { mat2d, mat4, vec3, vec4 } from 'gl-matrix';
-import uuidv4 from 'uuid/v4';
+import { v4 as uuidv4 } from 'uuid';
 import React from 'react'
 import { connect } from 'react-redux'
 import ReactDOM from 'react-dom';
